@@ -86,6 +86,22 @@ function utils::echo_title() {
 }
 
 #######################################
+# Echo a message using the WARNING format.
+# Arguments:
+#   Message, a multi-line text string.
+# Outputs:
+#   Writes message to STDOUT.
+#######################################
+function utils::echo_warn() {
+  if [[ ! -z "$1" ]]; then
+    # Print each line
+    echo "$1" | while read line ; do
+      echo "$(date +"$DATE_FORMAT") | WARN   - ${line}"
+    done
+  fi
+}
+
+#######################################
 # Harden Apache2 Webserver settings.
 # Arguments:
 #   Apache2 security configuration file to update, a file path.
@@ -194,6 +210,100 @@ function utils::mount_data_disk_by_size() {
   utils::echo_action "Mounting all drives..."
   mount -a
   utils::echo_info "Done."
+}
+
+#######################################
+# Create a MySQL client credentials file using passed arguments.
+# Arguments:
+#   username: the MySQL user's usename
+#   password: the MySQL user's password
+#   host: the database server host name
+#   port: the database server port number
+#   database: the name of the default database
+#   file_path: the path where to create the file
+# Outputs:
+#   Writes message to STDOUT.
+#######################################
+function utils::mysql_create_credentials_file() {
+  local username="$1"
+  local password="$2"
+  local host="$3"
+  local port="$4"
+  local database="$5"
+  local file_path="$6"
+
+  utils::echo_action "Creating MySQL credentials file: ${file_path}..."
+  if [[ -f "${file_path}" ]]; then
+    utils::echo_warn "File already exists. Overwriting content."
+  else
+    touch "${file_path}"
+  fi
+  chmod 400 "${file_path}"
+  cat <<EOF > "${file_path}"
+[client]
+host="${host}"
+port="${port}"
+user="${username}@${host%%.*}"
+password="${password}"
+database="${database}"
+EOF
+}
+
+#######################################
+# Create a MySQL database using passed arguments.
+# Does nothing if the database already exists.
+# Arguments:
+#   credentials_file_path: the path to the MySQL credentials file to use
+#   database: the name of the database to create
+# Outputs:
+#   Writes message to STDOUT.
+#######################################
+function utils::mysql_create_database_if_not_exists() {
+  local credentials_file_path="$1"
+  local database="$2"
+
+  utils::echo_action "Creating MySQL database if not existing: ${database}..."
+  utils::echo_warn "$(mysql --defaults-extra-file="${credentials_file_path}" \
+                            --execute "WARNINGS; CREATE DATABASE IF NOT EXISTS ${database};")"
+}
+
+#######################################
+# Create a MySQL user using passed arguments.
+# Resets the user password if the user already exists.
+# Arguments:
+#   credentials_file_path: the path to the MySQL credentials file to use
+#   username: the user's username to create
+#   password: the user's password
+# Outputs:
+#   Writes message to STDOUT.
+#######################################
+function utils::mysql_create_user_if_not_exists() {
+  local credentials_file_path="$1"
+  local username="$2"
+  local password="$3"
+
+  utils::echo_action "Creating MySQL database user if not existing: ${username}..."
+  utils::echo_warn "$(mysql --defaults-extra-file="${credentials_file_path}" \
+                            --execute "WARNINGS; CREATE USER IF NOT EXISTS ${username} IDENTIFIED BY '${password}';")"
+}
+
+#######################################
+# Grant all privileges on MySQL database to a user using passed arguments.
+# Arguments:
+#   credentials_file_path: the path to the MySQL credentials file to use
+#   database: the database that is the object of the grant
+#   username: the username that should be granted privileges
+# Outputs:
+#   Writes message to STDOUT.
+#######################################
+function utils::mysql_grant_all_privileges() {
+  local credentials_file_path="$1"
+  local database="$2"
+  local username="$3"
+
+  utils::echo_action "Granting all privileges on MySQL '${database}' database objects to user '${username}'..."
+  utils::echo_warn "$(mysql --defaults-extra-file="${credentials_file_path}" \
+                            --execute "WARNINGS; GRANT ALL PRIVILEGES ON ${database}.* TO ${username}; FLUSH PRIVILEGES;")"
 }
 
 #######################################
