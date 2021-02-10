@@ -26,7 +26,7 @@ function utils::add_hosts_file_entry() {
   if ! grep -q "${fqdn}" "${HOSTS_FILE_PATH}"; then
     printf "# ${comment}\n${ip} ${fqdn}\n" >> "${HOSTS_FILE_PATH}"
   else
-    utils::echo_info "Skipped: ${HOSTS_FILE_PATH} already contains entry for ${fqdn}."
+    utils::echo_warn "Skipped: ${HOSTS_FILE_PATH} already contains entry for ${fqdn}."
   fi
 }
 
@@ -170,7 +170,7 @@ function utils::mount_data_disk_by_size() {
     utils::echo_action "Creating file system of type ${data_disk_file_system_type} on ${data_disk_block_device_path}..."
     mkfs.${data_disk_file_system_type} "${data_disk_block_device_path}"
   else
-    utils::echo_info "Skipped: File system ${data_disk_file_system_type} already exist on ${data_disk_block_device_path}."
+    utils::echo_warn "Skipped: File system ${data_disk_file_system_type} already exist on ${data_disk_block_device_path}."
   fi
 
   utils::echo_action "Retrieving data disk file system UUID..."
@@ -196,7 +196,7 @@ function utils::mount_data_disk_by_size() {
 
   utils::echo_action "Updating ${FSTAB_FILE_PATH} file to automount the data disk using its UUID..."
   if grep -q "${data_disk_file_system_uuid}" "${FSTAB_FILE_PATH}"; then
-    utils::echo_info "Skipped: already set up."
+    utils::echo_warn "Skipped: already set up."
   else
     printf "UUID=${data_disk_file_system_uuid}\t${data_disk_mount_point_path}\t${data_disk_file_system_type}\tdefaults,nofail\t0\t2\n" >> "${FSTAB_FILE_PATH}"
   fi
