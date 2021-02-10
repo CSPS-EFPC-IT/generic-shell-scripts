@@ -20,7 +20,7 @@ function utils::add_hosts_file_entry() {
   local fqdn="$2"
   local comment="$3"
 
-  local readonly HOSTS_FILE_PATH="/etc/hosts"
+  local -r HOSTS_FILE_PATH="/etc/hosts"
 
   utils::echo_action "Adding entry for ${fqdn} in ${HOSTS_FILE_PATH}..."
   if ! grep -q "${fqdn}" "${HOSTS_FILE_PATH}"; then
@@ -120,9 +120,9 @@ function utils::mount_data_disk_by_size() {
   local data_disk_size="$1"
   local data_disk_mount_point_path="$2"
 
-  local readonly DEFAULT_FILE_SYSTEM_TYPE="ext4"
-  local readonly FSTAB_FILE_PATH="/etc/fstab"
-  local readonly TIMEOUT=60
+  local -r DEFAULT_FILE_SYSTEM_TYPE="ext4"
+  local -r FSTAB_FILE_PATH="/etc/fstab"
+  local -r TIMEOUT=60
 
   local data_disk_block_device_path
   local data_disk_block_device_name
@@ -213,8 +213,8 @@ function utils::mount_data_disk_by_size() {
 #   1 on failure
 #######################################
 function utils::parse_parameters() {
-  local readonly KEY_PREFIX="--"
-  local readonly KEY_REGEX_PATTERN="^${KEY_PREFIX}.*$"
+  local -r KEY_PREFIX="--"
+  local -r KEY_REGEX_PATTERN="^${KEY_PREFIX}.*$"
 
   local key
   local missing_parameter_flag
