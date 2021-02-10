@@ -25,7 +25,6 @@ function utils::add_hosts_file_entry() {
   utils::echo_action "Adding entry for ${fqdn} in ${HOSTS_FILE_PATH}..."
   if ! grep -q "${fqdn}" "${HOSTS_FILE_PATH}"; then
     printf "# ${comment}\n${ip} ${fqdn}\n" >> "${HOSTS_FILE_PATH}"
-    utils::echo_info "Done."
   else
     utils::echo_info "Skipped: ${HOSTS_FILE_PATH} already contains entry for ${fqdn}."
   fi
@@ -162,7 +161,6 @@ function utils::mount_data_disk_by_size() {
       exit 1
       ;;
   esac
-  utils::echo_info "Done."
 
   utils::echo_action "Creating file system on data disk block if none exists..."
   data_disk_file_system_type="$(lsblk --noheadings --output fstype ${data_disk_block_device_path})"
@@ -171,7 +169,6 @@ function utils::mount_data_disk_by_size() {
     data_disk_file_system_type="${DEFAULT_FILE_SYSTEM_TYPE}"
     utils::echo_action "Creating file system of type ${data_disk_file_system_type} on ${data_disk_block_device_path}..."
     mkfs.${data_disk_file_system_type} "${data_disk_block_device_path}"
-    utils::echo_info "Done."
   else
     utils::echo_info "Skipped: File system ${data_disk_file_system_type} already exist on ${data_disk_block_device_path}."
   fi
@@ -193,23 +190,19 @@ function utils::mount_data_disk_by_size() {
   else
     utils::echo_info "Data disk file system UUID: ${data_disk_file_system_uuid}"
   fi
-  utils::echo_info "Done."
 
   utils::echo_action "Creating data disk mount point at ${data_disk_mount_point_path}..."
   mkdir -p "${data_disk_mount_point_path}"
-  utils::echo_info "Done."
 
   utils::echo_action "Updating ${FSTAB_FILE_PATH} file to automount the data disk using its UUID..."
   if grep -q "${data_disk_file_system_uuid}" "${FSTAB_FILE_PATH}"; then
     utils::echo_info "Skipped: already set up."
   else
     printf "UUID=${data_disk_file_system_uuid}\t${data_disk_mount_point_path}\t${data_disk_file_system_type}\tdefaults,nofail\t0\t2\n" >> "${FSTAB_FILE_PATH}"
-    utils::echo_info "Done."
   fi
 
   utils::echo_action "Mounting all drives..."
   mount -a
-  utils::echo_info "Done."
 }
 
 #######################################
@@ -351,7 +344,6 @@ function utils::parse_parameters() {
     # Move to the next key/value pair or up to the end of the parameter list.
     shift $(( 2 < ${#@} ? 2 : ${#@} ))
   done
-  utils::echo_info "Done."
 
   utils::echo_action "Checking for missing parameters..."
   sorted_keys=$(echo ${!parameters[@]} | tr " " "\n" | sort | tr "\n" " ");
@@ -362,7 +354,6 @@ function utils::parse_parameters() {
       missing_parameter_flag=true
     fi
   done
-  utils::echo_info "Done."
 
   # Abort if missing or extra parameters.
   usage="USAGE: $(basename $0)"
@@ -379,11 +370,9 @@ function utils::parse_parameters() {
   for key in ${sorted_keys}; do
     utils::echo_info "${key} = \"${parameters[${key}]}\""
   done
-  utils::echo_info "Done."
 
   utils::echo_action "Locking down parameters array..."
   readonly parameters
-  utils::echo_info "Done."
 }
 
 #######################################
@@ -438,8 +427,6 @@ function utils::update_apache2_config_file() {
 
   # Perform substitution while maintaining code indentation.
   sed -i -E "s|^([[:blank:]]*)${parameter}[[:blank:]].*$|\1${parameter} ${value}|g" "${config_file_path}"
-
-  utils::echo_info "Done."
 }
 
 #######################################
@@ -479,8 +466,6 @@ function utils::update_php_config_file() {
 
   # Perform substitution.
   sed -i -E "s|${regex}|${parameter} = ${value}|g" "${config_file_path}"
-
-  utils::echo_info "Done."
 }
 
 #######################################
