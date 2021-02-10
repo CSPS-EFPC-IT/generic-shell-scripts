@@ -10,11 +10,16 @@ source ./utils.sh
 
 function main() {
   utils::set_exit_trap
-  utils::echo_title "Start of $0"
 
   #############################################################################
 
-  utils::echo_title "Upgrade Server and Remove Unused Packages"
+  utils::echo_title "Start of $0"
+
+  utils::echo_info "This script: "
+  utils::echo_info "1) Upgrades all installed server packages"
+  utils::echo_info "2) Removes all packages that are no longer used"
+
+  #############################################################################
 
   utils::echo_action "Updating server package index files..."
   apt update
@@ -27,7 +32,12 @@ function main() {
 
   #############################################################################
 
-  utils::echo_title "End of $0"
+  utils::echo_title "End of Script"
+
+  utils::echo_info "$0 completed successfully."
+
+  #############################################################################
+
   utils::unset_exit_trap
 }
 

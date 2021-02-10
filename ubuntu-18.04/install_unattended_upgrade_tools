@@ -24,11 +24,18 @@ source ./utils.sh
 
 function main() {
   utils::set_exit_trap
+
+  #############################################################################
+
   utils::echo_title "Start of $0"
+
+  utils::echo_info "This script: "
+  utils::echo_info "1) Installs and configures Unattended-Upgrades, Apticron and related packages"
 
   #############################################################################
 
   utils::echo_title "Parse Input Parameters"
+
   utils::parse_parameters "$@"
 
   #############################################################################
@@ -119,7 +126,12 @@ function main() {
 
   #############################################################################
 
-  utils::echo_title "End of $0"
+  utils::echo_title "End of Script"
+
+  utils::echo_info "$0 completed successfully."
+
+  #############################################################################
+
   utils::unset_exit_trap
 }
 
