@@ -5,6 +5,7 @@
 
 # Constants
 readonly DATE_FORMAT='%Y-%m-%d %H:%M:%S (%Z)'
+readonly MYSQL_USER_OPTIONS_FILE_PATH="${HOME}/.my.cnf"
 
 #######################################
 # Add new commented entry in server hosts file.
@@ -25,9 +26,8 @@ function utils::add_hosts_file_entry() {
   utils::echo_action "Adding entry for ${fqdn} in ${HOSTS_FILE_PATH}..."
   if ! grep -q "${fqdn}" "${HOSTS_FILE_PATH}"; then
     printf "# ${comment}\n${ip} ${fqdn}\n" >> "${HOSTS_FILE_PATH}"
-    utils::echo_info "Done."
   else
-    utils::echo_info "Skipped: ${HOSTS_FILE_PATH} already contains entry for ${fqdn}."
+    utils::echo_warn "Skipped: ${HOSTS_FILE_PATH} already contains entry for ${fqdn}."
   fi
 }
 
@@ -83,6 +83,22 @@ function utils::echo_title() {
   echo "###############################################################################"
   echo "$1"
   echo "###############################################################################"
+}
+
+#######################################
+# Echo a message using the WARNING format.
+# Arguments:
+#   Message, a multi-line text string.
+# Outputs:
+#   Writes message to STDOUT.
+#######################################
+function utils::echo_warn() {
+  if [[ ! -z "$1" ]]; then
+    # Print each line
+    echo "$1" | while read line ; do
+      echo "$(date +"$DATE_FORMAT") | WARN   - ${line}"
+    done
+  fi
 }
 
 #######################################
@@ -146,7 +162,6 @@ function utils::mount_data_disk_by_size() {
       exit 1
       ;;
   esac
-  utils::echo_info "Done."
 
   utils::echo_action "Creating file system on data disk block if none exists..."
   data_disk_file_system_type="$(lsblk --noheadings --output fstype ${data_disk_block_device_path})"
@@ -155,9 +170,8 @@ function utils::mount_data_disk_by_size() {
     data_disk_file_system_type="${DEFAULT_FILE_SYSTEM_TYPE}"
     utils::echo_action "Creating file system of type ${data_disk_file_system_type} on ${data_disk_block_device_path}..."
     mkfs.${data_disk_file_system_type} "${data_disk_block_device_path}"
-    utils::echo_info "Done."
   else
-    utils::echo_info "Skipped: File system ${data_disk_file_system_type} already exist on ${data_disk_block_device_path}."
+    utils::echo_warn "Skipped: File system ${data_disk_file_system_type} already exist on ${data_disk_block_device_path}."
   fi
 
   utils::echo_action "Retrieving data disk file system UUID..."
@@ -177,23 +191,128 @@ function utils::mount_data_disk_by_size() {
   else
     utils::echo_info "Data disk file system UUID: ${data_disk_file_system_uuid}"
   fi
-  utils::echo_info "Done."
 
   utils::echo_action "Creating data disk mount point at ${data_disk_mount_point_path}..."
   mkdir -p "${data_disk_mount_point_path}"
-  utils::echo_info "Done."
 
   utils::echo_action "Updating ${FSTAB_FILE_PATH} file to automount the data disk using its UUID..."
   if grep -q "${data_disk_file_system_uuid}" "${FSTAB_FILE_PATH}"; then
-    utils::echo_info "Skipped: already set up."
+    utils::echo_warn "Skipped: already set up."
   else
     printf "UUID=${data_disk_file_system_uuid}\t${data_disk_mount_point_path}\t${data_disk_file_system_type}\tdefaults,nofail\t0\t2\n" >> "${FSTAB_FILE_PATH}"
-    utils::echo_info "Done."
   fi
 
   utils::echo_action "Mounting all drives..."
   mount -a
-  utils::echo_info "Done."
+}
+
+#######################################
+# Create a MySQL options file in the curreny user's home directory.
+# Sets [client] section options with passed arguments.
+# Overwrites existing option file, if any.
+# Globals:
+#   MYSQL_USER_OPTIONS_FILE_PATH
+# Arguments:
+#   username: the MySQL user's usename
+#   password: the MySQL user's password
+#   host: the database server host name
+#   port: the database server port number
+#   database: the name of the user's default database
+# Outputs:
+#   Writes message to STDOUT.
+#######################################
+function utils::mysql_create_user_options_file() {
+  local username="$1"
+  local password="$2"
+  local host="$3"
+  local port="$4"
+  local database="$5"
+
+  utils::echo_action "Creating MySQL options file: ${MYSQL_USER_OPTIONS_FILE_PATH}..."
+  if [[ -f "${MYSQL_USER_OPTIONS_FILE_PATH}" ]]; then
+    utils::echo_warn "File already exists. Overwriting content."
+  else
+    touch "${MYSQL_USER_OPTIONS_FILE_PATH}"
+  fi
+  chmod 400 "${MYSQL_USER_OPTIONS_FILE_PATH}"
+  cat <<EOF > "${MYSQL_USER_OPTIONS_FILE_PATH}"
+[client]
+host="${host}"
+port="${port}"
+user="${username}@${host%%.*}"
+password="${password}"
+database="${database}"
+EOF
+}
+
+#######################################
+# Create a MySQL database using passed arguments.
+# Does nothing if the database already exists.
+# Requires a valid MySQL options file in the current user's home directory.
+# Arguments:
+#   database: the name of the database to create
+# Outputs:
+#   Writes message to STDOUT.
+#######################################
+function utils::mysql_create_database_if_not_exists() {
+  local database="$1"
+
+  utils::echo_action "Creating MySQL database if not existing: ${database}..."
+  utils::echo_warn "$(mysql --execute "WARNINGS; CREATE DATABASE IF NOT EXISTS ${database};")"
+}
+
+#######################################
+# Create a MySQL user using passed arguments.
+# Resets the user password if the user already exists.
+# Requires a valid MySQL options file in the current user's home directory.
+# Arguments:
+#   username: the user's username to create
+#   password: the user's password
+# Outputs:
+#   Writes message to STDOUT.
+#######################################
+function utils::mysql_create_user_if_not_exists() {
+  local username="$1"
+  local password="$2"
+
+  utils::echo_action "Creating MySQL database user if not existing: ${username}..."
+  utils::echo_warn "$(mysql --execute "WARNINGS; CREATE USER IF NOT EXISTS ${username} IDENTIFIED BY '${password}';")"
+}
+
+#######################################
+# Delete the current user's MySQL options file.
+# Globals:
+#   MYSQL_USER_OPTIONS_FILE_PATH
+# Arguments:
+#   None
+# Outputs:
+#   Writes message to STDOUT.
+#######################################
+function utils::mysql_delete_user_options_file() {
+
+  utils::echo_action "Deleting MySQL options file: ${MYSQL_USER_OPTIONS_FILE_PATH}..."
+  if [[ -f "${MYSQL_USER_OPTIONS_FILE_PATH}" ]]; then
+    rm -f "${MYSQL_USER_OPTIONS_FILE_PATH}"
+  else
+    utils::echo_warn "MySQL options file not found."
+  fi
+}
+
+#######################################
+# Grant all privileges on MySQL database to a user using passed arguments.
+# Requires a valid MySQL options file in the current user's home directory.
+# Arguments:
+#   database: the database that is the object of the grant
+#   username: the username that should be granted privileges
+# Outputs:
+#   Writes message to STDOUT.
+#######################################
+function utils::mysql_grant_all_privileges() {
+  local database="$1"
+  local username="$2"
+
+  utils::echo_action "Granting all privileges on MySQL '${database}' database objects to user '${username}'..."
+  utils::echo_warn "$(mysql --execute "WARNINGS; GRANT ALL PRIVILEGES ON ${database}.* TO ${username}; FLUSH PRIVILEGES;")"
 }
 
 #######################################
@@ -241,7 +360,6 @@ function utils::parse_parameters() {
     # Move to the next key/value pair or up to the end of the parameter list.
     shift $(( 2 < ${#@} ? 2 : ${#@} ))
   done
-  utils::echo_info "Done."
 
   utils::echo_action "Checking for missing parameters..."
   sorted_keys=$(echo ${!parameters[@]} | tr " " "\n" | sort | tr "\n" " ");
@@ -252,7 +370,6 @@ function utils::parse_parameters() {
       missing_parameter_flag=true
     fi
   done
-  utils::echo_info "Done."
 
   # Abort if missing or extra parameters.
   usage="USAGE: $(basename $0)"
@@ -269,11 +386,9 @@ function utils::parse_parameters() {
   for key in ${sorted_keys}; do
     utils::echo_info "${key} = \"${parameters[${key}]}\""
   done
-  utils::echo_info "Done."
 
   utils::echo_action "Locking down parameters array..."
   readonly parameters
-  utils::echo_info "Done."
 }
 
 #######################################
@@ -328,8 +443,6 @@ function utils::update_apache2_config_file() {
 
   # Perform substitution while maintaining code indentation.
   sed -i -E "s|^([[:blank:]]*)${parameter}[[:blank:]].*$|\1${parameter} ${value}|g" "${config_file_path}"
-
-  utils::echo_info "Done."
 }
 
 #######################################
@@ -369,8 +482,6 @@ function utils::update_php_config_file() {
 
   # Perform substitution.
   sed -i -E "s|${regex}|${parameter} = ${value}|g" "${config_file_path}"
-
-  utils::echo_info "Done."
 }
 
 #######################################
