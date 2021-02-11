@@ -294,7 +294,7 @@ function utils::mysql_delete_user_options_file() {
 
   local mysql_options_file_path="${HOME}/${MYSQL_USER_OPTIONS_FILE_NAME}"
 
-  utils::echo_action "Deleting current user's MySQL options file..."
+  utils::echo_action "Deleting MySQL options file: ${mysql_options_file_path}..."
   if [[ -f "${mysql_options_file_path}" ]]; then
     rm -f "${mysql_options_file_path}"
   else
