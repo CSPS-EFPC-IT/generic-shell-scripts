@@ -228,7 +228,7 @@ function utils::mysql_create_user_options_file() {
   local port="$4"
   local database="$5"
 
-  mysql_options_file_path="${HOME}/${MYSQL_USER_OPTIONS_FILE_NAME}"
+  local mysql_options_file_path="${HOME}/${MYSQL_USER_OPTIONS_FILE_NAME}"
 
   utils::echo_action "Creating MySQL options file: ${mysql_options_file_path}..."
   if [[ -f "${mysql_options_file_path}" ]]; then
