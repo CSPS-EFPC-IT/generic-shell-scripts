@@ -5,7 +5,7 @@
 
 # Constants
 readonly DATE_FORMAT='%Y-%m-%d %H:%M:%S (%Z)'
-readonly MYSQL_USER_OPTIONS_FILE_NAME=".my.cnf"
+readonly MYSQL_USER_OPTIONS_FILE_PATH="${HOME}/.my.cnf"
 
 #######################################
 # Add new commented entry in server hosts file.
@@ -211,7 +211,7 @@ function utils::mount_data_disk_by_size() {
 # Sets [client] section options with passed arguments.
 # Overwrites existing option file, if any.
 # Globals:
-#   MYSQL_USER_OPTIONS_FILE_NAME
+#   MYSQL_USER_OPTIONS_FILE_PATH
 # Arguments:
 #   username: the MySQL user's usename
 #   password: the MySQL user's password
@@ -228,16 +228,14 @@ function utils::mysql_create_user_options_file() {
   local port="$4"
   local database="$5"
 
-  local mysql_options_file_path="${HOME}/${MYSQL_USER_OPTIONS_FILE_NAME}"
-
-  utils::echo_action "Creating MySQL options file: ${mysql_options_file_path}..."
-  if [[ -f "${mysql_options_file_path}" ]]; then
+  utils::echo_action "Creating MySQL options file: ${MYSQL_USER_OPTIONS_FILE_PATH}..."
+  if [[ -f "${MYSQL_USER_OPTIONS_FILE_PATH}" ]]; then
     utils::echo_warn "File already exists. Overwriting content."
   else
-    touch "${mysql_options_file_path}"
+    touch "${MYSQL_USER_OPTIONS_FILE_PATH}"
   fi
-  chmod 400 "${mysql_options_file_path}"
-  cat <<EOF > "${mysql_options_file_path}"
+  chmod 400 "${MYSQL_USER_OPTIONS_FILE_PATH}"
+  cat <<EOF > "${MYSQL_USER_OPTIONS_FILE_PATH}"
 [client]
 host="${host}"
 port="${port}"
@@ -284,7 +282,7 @@ function utils::mysql_create_user_if_not_exists() {
 #######################################
 # Delete the current user's MySQL options file.
 # Globals:
-#   MYSQL_USER_OPTIONS_FILE_NAME
+#   MYSQL_USER_OPTIONS_FILE_PATH
 # Arguments:
 #   None
 # Outputs:
@@ -292,11 +290,9 @@ function utils::mysql_create_user_if_not_exists() {
 #######################################
 function utils::mysql_delete_user_options_file() {
 
-  local mysql_options_file_path="${HOME}/${MYSQL_USER_OPTIONS_FILE_NAME}"
-
-  utils::echo_action "Deleting MySQL options file: ${mysql_options_file_path}..."
-  if [[ -f "${mysql_options_file_path}" ]]; then
-    rm -f "${mysql_options_file_path}"
+  utils::echo_action "Deleting MySQL options file: ${MYSQL_USER_OPTIONS_FILE_PATH}..."
+  if [[ -f "${MYSQL_USER_OPTIONS_FILE_PATH}" ]]; then
+    rm -f "${MYSQL_USER_OPTIONS_FILE_PATH}"
   else
     utils::echo_warn "MySQL options file not found."
   fi
