@@ -5,6 +5,7 @@
 
 # Constants
 readonly DATE_FORMAT='%Y-%m-%d %H:%M:%S (%Z)'
+readonly MYSQL_USER_OPTIONS_FILE_NAME=".my.cnf"
 
 #######################################
 # Add new commented entry in server hosts file.
@@ -206,33 +207,37 @@ function utils::mount_data_disk_by_size() {
 }
 
 #######################################
-# Create a MySQL client credentials file using passed arguments.
+# Create a MySQL options file in the curreny user's home directory.
+# Sets [client] section options with passed arguments.
+# Overwrites existing option file, if any.
+# Globals:
+#   MYSQL_USER_OPTIONS_FILE_NAME
 # Arguments:
 #   username: the MySQL user's usename
 #   password: the MySQL user's password
 #   host: the database server host name
 #   port: the database server port number
-#   database: the name of the default database
-#   file_path: the path where to create the file
+#   database: the name of the user's default database
 # Outputs:
 #   Writes message to STDOUT.
 #######################################
-function utils::mysql_create_credentials_file() {
+function utils::mysql_create_user_options_file() {
   local username="$1"
   local password="$2"
   local host="$3"
   local port="$4"
   local database="$5"
-  local file_path="$6"
 
-  utils::echo_action "Creating MySQL credentials file: ${file_path}..."
-  if [[ -f "${file_path}" ]]; then
+  mysql_options_file_path="${HOME}/${MYSQL_OPTIONS_FILE_NAME}"
+
+  utils::echo_action "Creating MySQL options file: ${mysql_options_file_path}..."
+  if [[ -f "${mysql_options_file_path}" ]]; then
     utils::echo_warn "File already exists. Overwriting content."
   else
-    touch "${file_path}"
+    touch "${mysql_options_file_path}"
   fi
-  chmod 400 "${file_path}"
-  cat <<EOF > "${file_path}"
+  chmod 400 "${mysql_options_file_path}"
+  cat <<EOF > "${mysql_options_file_path}"
 [client]
 host="${host}"
 port="${port}"
@@ -245,58 +250,73 @@ EOF
 #######################################
 # Create a MySQL database using passed arguments.
 # Does nothing if the database already exists.
+# Requires a valid MySQL options file in the current user's home directory.
 # Arguments:
-#   credentials_file_path: the path to the MySQL credentials file to use
 #   database: the name of the database to create
 # Outputs:
 #   Writes message to STDOUT.
 #######################################
 function utils::mysql_create_database_if_not_exists() {
-  local credentials_file_path="$1"
-  local database="$2"
+  local database="$1"
 
   utils::echo_action "Creating MySQL database if not existing: ${database}..."
-  utils::echo_warn "$(mysql --defaults-extra-file="${credentials_file_path}" \
-                            --execute "WARNINGS; CREATE DATABASE IF NOT EXISTS ${database};")"
+  utils::echo_warn "$(mysql --execute "WARNINGS; CREATE DATABASE IF NOT EXISTS ${database};")"
 }
 
 #######################################
 # Create a MySQL user using passed arguments.
 # Resets the user password if the user already exists.
+# Requires a valid MySQL options file in the current user's home directory.
 # Arguments:
-#   credentials_file_path: the path to the MySQL credentials file to use
 #   username: the user's username to create
 #   password: the user's password
 # Outputs:
 #   Writes message to STDOUT.
 #######################################
 function utils::mysql_create_user_if_not_exists() {
-  local credentials_file_path="$1"
-  local username="$2"
-  local password="$3"
+  local username="$1"
+  local password="$2"
 
   utils::echo_action "Creating MySQL database user if not existing: ${username}..."
-  utils::echo_warn "$(mysql --defaults-extra-file="${credentials_file_path}" \
-                            --execute "WARNINGS; CREATE USER IF NOT EXISTS ${username} IDENTIFIED BY '${password}';")"
+  utils::echo_warn "$(mysql --execute "WARNINGS; CREATE USER IF NOT EXISTS ${username} IDENTIFIED BY '${password}';")"
+}
+
+#######################################
+# Delete the current user's MySQL options file.
+# Globals:
+#   MYSQL_OPTIONS_FILE_NAME
+# Arguments:
+#   None
+# Outputs:
+#   Writes message to STDOUT.
+#######################################
+function utils::mysql_delete_user_options_file() {
+
+  local mysql_options_file_path="${HOME}/${MYSQL_OPTIONS_FILE_NAME}"
+
+  utils::echo_action "Deleting current user's MySQL options file..."
+  if [[ -f "${mysql_options_file_path}" ]]; then
+    rm -f "${mysql_options_file_path}"
+  else
+    utils::echo_warn "MySQL options file not found."
+  fi
 }
 
 #######################################
 # Grant all privileges on MySQL database to a user using passed arguments.
+# Requires a valid MySQL options file in the current user's home directory.
 # Arguments:
-#   credentials_file_path: the path to the MySQL credentials file to use
 #   database: the database that is the object of the grant
 #   username: the username that should be granted privileges
 # Outputs:
 #   Writes message to STDOUT.
 #######################################
 function utils::mysql_grant_all_privileges() {
-  local credentials_file_path="$1"
-  local database="$2"
-  local username="$3"
+  local database="$1"
+  local username="$2"
 
   utils::echo_action "Granting all privileges on MySQL '${database}' database objects to user '${username}'..."
-  utils::echo_warn "$(mysql --defaults-extra-file="${credentials_file_path}" \
-                            --execute "WARNINGS; GRANT ALL PRIVILEGES ON ${database}.* TO ${username}; FLUSH PRIVILEGES;")"
+  utils::echo_warn "$(mysql --execute "WARNINGS; GRANT ALL PRIVILEGES ON ${database}.* TO ${username}; FLUSH PRIVILEGES;")"
 }
 
 #######################################
