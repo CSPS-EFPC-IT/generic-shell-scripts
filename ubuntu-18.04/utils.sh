@@ -228,7 +228,7 @@ function utils::mysql_create_user_options_file() {
   local port="$4"
   local database="$5"
 
-  mysql_options_file_path="${HOME}/${MYSQL_OPTIONS_FILE_NAME}"
+  mysql_options_file_path="${HOME}/${MYSQL_USER_OPTIONS_FILE_NAME}"
 
   utils::echo_action "Creating MySQL options file: ${mysql_options_file_path}..."
   if [[ -f "${mysql_options_file_path}" ]]; then
@@ -284,7 +284,7 @@ function utils::mysql_create_user_if_not_exists() {
 #######################################
 # Delete the current user's MySQL options file.
 # Globals:
-#   MYSQL_OPTIONS_FILE_NAME
+#   MYSQL_USER_OPTIONS_FILE_NAME
 # Arguments:
 #   None
 # Outputs:
@@ -292,7 +292,7 @@ function utils::mysql_create_user_if_not_exists() {
 #######################################
 function utils::mysql_delete_user_options_file() {
 
-  local mysql_options_file_path="${HOME}/${MYSQL_OPTIONS_FILE_NAME}"
+  local mysql_options_file_path="${HOME}/${MYSQL_USER_OPTIONS_FILE_NAME}"
 
   utils::echo_action "Deleting current user's MySQL options file..."
   if [[ -f "${mysql_options_file_path}" ]]; then
