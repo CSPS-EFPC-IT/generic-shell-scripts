@@ -40,19 +40,19 @@ function apache2::update_config_file() {
   local value="$2"
   local config_file_path="$3"
 
-  logger::echo_action "Setting \"${parameter}\" to \"${value}\" in ${config_file_path}..."
+  logger::action "Setting \"${parameter}\" to \"${value}\" in ${config_file_path}..."
 
   # Check if one and only one line match the search criteria.
   case $(grep "^[[:blank:]]*${parameter}[[:blank:]].*$" "${config_file_path}" | wc -l) in
     0)
-      logger::echo_error "No line matched the search criteria. Aborting."
+      logger::error "No line matched the search criteria. Aborting."
       exit 1
       ;;
     1)
-      logger::echo_info "One line matched the search criteria."
+      logger::info "One line matched the search criteria."
       ;;
     *)
-      logger::echo_error "More than one line matched the search criteria. Aborting."
+      logger::error "More than one line matched the search criteria. Aborting."
       exit 1
       ;;
   esac

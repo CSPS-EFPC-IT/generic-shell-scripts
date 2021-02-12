@@ -35,7 +35,7 @@ function utils::parse_parameters() {
   local usage
   local value
 
-  logger::echo_action "Mapping input parameter values and checking for unexpected parameters..."
+  logger::action "Mapping input parameter values and checking for unexpected parameters..."
   unexpected_parameter_flag=false
   while [[ ${#@} -gt 0 ]]; do
     key=$1
@@ -46,7 +46,7 @@ function utils::parse_parameters() {
     if [[ "${key}" =~ $KEY_REGEX_PATTERN && ${parameters[${key:${#KEY_PREFIX}}]+_} ]]; then
       parameters[${key:${#KEY_PREFIX}}]="${value}"
     else
-      logger::echo_error "Unexpected parameter: ${key}"
+      logger::error "Unexpected parameter: ${key}"
       unexpected_parameter_flag=true
     fi
 
@@ -54,12 +54,12 @@ function utils::parse_parameters() {
     shift $(( 2 < ${#@} ? 2 : ${#@} ))
   done
 
-  logger::echo_action "Checking for missing parameters..."
+  logger::action "Checking for missing parameters..."
   sorted_keys=$(echo ${!parameters[@]} | tr " " "\n" | sort | tr "\n" " ");
   missing_parameter_flag=false
   for key in ${sorted_keys}; do
     if [[ -z "${parameters[${key}]}" ]]; then
-      logger::echo_error "Missing parameter: ${key}."
+      logger::error "Missing parameter: ${key}."
       missing_parameter_flag=true
     fi
   done
@@ -67,20 +67,20 @@ function utils::parse_parameters() {
   # Abort if missing or extra parameters.
   usage="USAGE: $(basename $0)"
   if [[ "${unexpected_parameter_flag}" == "true" || "${missing_parameter_flag}" == "true" ]]; then
-    logger::echo_error "Execution aborted due to missing or extra parameters."
+    logger::error "Execution aborted due to missing or extra parameters."
     for key in ${sorted_keys}; do
       usage="${usage} ${KEY_PREFIX}${key} \$${key}"
     done
-    logger::echo_error "${usage}";
+    logger::error "${usage}";
     exit 1;
   fi
 
-  logger::echo_action "Printing input parameter values for debugging purposes..."
+  logger::action "Printing input parameter values for debugging purposes..."
   for key in ${sorted_keys}; do
-    logger::echo_info "${key} = \"${parameters[${key}]}\""
+    logger::info "${key} = \"${parameters[${key}]}\""
   done
 
-  logger::echo_action "Locking down parameters array..."
+  logger::action "Locking down parameters array..."
   readonly parameters
 }
 

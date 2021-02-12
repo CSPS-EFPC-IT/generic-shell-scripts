@@ -25,8 +25,8 @@ readonly MYSQL_USER_OPTIONS_FILE_PATH="${HOME}/.my.cnf"
 function mysql::create_database_if_not_exists() {
   local database="$1"
 
-  logger::echo_action "Creating MySQL database if not existing: ${database}..."
-  logger::echo_warn "$(mysql --execute "WARNINGS; CREATE DATABASE IF NOT EXISTS ${database};")"
+  logger::action "Creating MySQL database if not existing: ${database}..."
+  logger::warn "$(mysql --execute "WARNINGS; CREATE DATABASE IF NOT EXISTS ${database};")"
 }
 
 #######################################
@@ -43,8 +43,8 @@ function mysql::create_user_if_not_exists() {
   local username="$1"
   local password="$2"
 
-  logger::echo_action "Creating MySQL database user if not existing: ${username}..."
-  logger::echo_warn "$(mysql --execute "WARNINGS; CREATE USER IF NOT EXISTS ${username} IDENTIFIED BY '${password}';")"
+  logger::action "Creating MySQL database user if not existing: ${username}..."
+  logger::warn "$(mysql --execute "WARNINGS; CREATE USER IF NOT EXISTS ${username} IDENTIFIED BY '${password}';")"
 }
 
 #######################################
@@ -69,9 +69,9 @@ function mysql::create_user_options_file() {
   local port="$4"
   local database="$5"
 
-  logger::echo_action "Creating MySQL options file: ${MYSQL_USER_OPTIONS_FILE_PATH}..."
+  logger::action "Creating MySQL options file: ${MYSQL_USER_OPTIONS_FILE_PATH}..."
   if [[ -f "${MYSQL_USER_OPTIONS_FILE_PATH}" ]]; then
-    logger::echo_warn "File already exists. Overwriting content."
+    logger::warn "File already exists. Overwriting content."
   else
     touch "${MYSQL_USER_OPTIONS_FILE_PATH}"
   fi
@@ -97,11 +97,11 @@ EOF
 #######################################
 function mysql::delete_user_options_file() {
 
-  logger::echo_action "Deleting MySQL options file: ${MYSQL_USER_OPTIONS_FILE_PATH}..."
+  logger::action "Deleting MySQL options file: ${MYSQL_USER_OPTIONS_FILE_PATH}..."
   if [[ -f "${MYSQL_USER_OPTIONS_FILE_PATH}" ]]; then
     rm -f "${MYSQL_USER_OPTIONS_FILE_PATH}"
   else
-    logger::echo_warn "MySQL options file not found."
+    logger::warn "MySQL options file not found."
   fi
 }
 
@@ -118,6 +118,6 @@ function mysql::grant_all_privileges() {
   local database="$1"
   local username="$2"
 
-  logger::echo_action "Granting all privileges on MySQL '${database}' database objects to user '${username}'..."
-  logger::echo_warn "$(mysql --execute "WARNINGS; GRANT ALL PRIVILEGES ON ${database}.* TO ${username}; FLUSH PRIVILEGES;")"
+  logger::action "Granting all privileges on MySQL '${database}' database objects to user '${username}'..."
+  logger::warn "$(mysql --execute "WARNINGS; GRANT ALL PRIVILEGES ON ${database}.* TO ${username}; FLUSH PRIVILEGES;")"
 }
