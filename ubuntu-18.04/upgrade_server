@@ -1,11 +1,14 @@
 #!/bin/bash
 #
 # Upgrade server and remove unused packages on Ubuntu 18.04.
-# This script must be run as root (ex.: sudo sh ./[script_name]) and prior to
-# any server customization.
-# Style Guide: https://google.github.io/styleguide/shellguide.html
+# Usage
+#   This script must be run as root (ex.: sudo sh ./[script_name]) and prior to
+#   any server customization.
+# Style Guide
+#   https://google.github.io/styleguide/shellguide.html
 
 # Functions
+source ./logger.sh
 source ./utils.sh
 
 function main() {
@@ -13,26 +16,26 @@ function main() {
 
   #############################################################################
 
-  utils::echo_title "Start of $0"
+  logger::title "Start of $0"
 
-  utils::echo_info "This script: "
-  utils::echo_info "1) Upgrades all installed server packages"
-  utils::echo_info "2) Removes all packages that are no longer used"
+  logger::info "This script: "
+  logger::info "1) Upgrades all installed server packages"
+  logger::info "2) Removes all packages that are no longer used"
 
   #############################################################################
 
-  utils::echo_action "Updating server package index files..."
+  logger::action "Updating server package index files..."
   apt update
 
-  utils::echo_action "Upgrading all installed server packages to their latest version and apply available security patches..."
+  logger::action "Upgrading all installed server packages to their latest version and apply available security patches..."
   apt upgrade -y
 
-  utils::echo_action "Removing server packages that are no longer needed."
+  logger::action "Removing server packages that are no longer needed."
   apt autoremove -y
 
   #############################################################################
 
-  utils::echo_title "End of $0"
+  logger::title "End of $0"
 
   #############################################################################
 
