@@ -9,7 +9,6 @@
 #   https://google.github.io/styleguide/shellguide.html
 
 # Functions
-source ./logger.sh
 
 #######################################
 # Update the value of existing and already enabled parameter in a PHP config file.
