@@ -11,7 +11,7 @@
 readonly DATE_FORMAT='%Y-%m-%d %H:%M:%S (%Z)'
 
 #######################################
-# Echo a message using the ACTION format.
+# Log a message using the ACTION format.
 # Globals:
 #   DATE_FORMAT
 # Arguments:
@@ -19,13 +19,13 @@ readonly DATE_FORMAT='%Y-%m-%d %H:%M:%S (%Z)'
 # Outputs:
 #   Writes message to STDOUT.
 #######################################
-function logger::echo_action() {
+function logger::action() {
   echo ""
   echo "$(date +"$DATE_FORMAT") | ACTION - $1"
 }
 
 #######################################
-# Echo a message using the ERROR format.
+# Log a message using the ERROR format.
 # Globals:
 #   DATE_FORMAT
 # Arguments:
@@ -33,12 +33,12 @@ function logger::echo_action() {
 # Outputs:
 #   Writes message to STDERR.
 #######################################
-function logger::echo_error() {
+function logger::error() {
   echo "$(date +"$DATE_FORMAT") | ERROR  - $1" >&2
 }
 
 #######################################
-# Echo a message using the INFO format.
+# Log a message using the INFORMATIVE format.
 # Globals:
 #   DATE_FORMAT
 # Arguments:
@@ -46,18 +46,18 @@ function logger::echo_error() {
 # Outputs:
 #   Writes message to STDOUT.
 #######################################
-function logger::echo_info() {
+function logger::info() {
   echo "$(date +"$DATE_FORMAT") | INFO   - $1"
 }
 
 #######################################
-# Echo a message using the TITLE format.
+# Log a message using the TITLE format.
 # Arguments:
 #   Message, a text string.
 # Outputs:
 #   Writes message to STDOUT.
 #######################################
-function logger::echo_title() {
+function logger::title() {
   echo ""
   echo "###############################################################################"
   echo "$1"
@@ -65,13 +65,13 @@ function logger::echo_title() {
 }
 
 #######################################
-# Echo a message using the WARNING format.
+# Log a message using the WARNING format.
 # Arguments:
 #   Message, a multi-line text string.
 # Outputs:
 #   Writes message to STDOUT.
 #######################################
-function logger::echo_warn() {
+function logger::warn() {
   if [[ ! -z "$1" ]]; then
     # Print each line
     echo "$1" | while read line ; do
