@@ -1,8 +1,11 @@
 #!/bin/bash
 #
 # Install unattended upgrade tools on Ubuntu 18.04.
-# This script must be run as root (ex.: sudo sh ./[script_name]).
-# Style Guide: https://google.github.io/styleguide/shellguide.html
+# Notes
+#   This script must be run as root (ex.: sudo sh ./[script_name]).
+#   This script is designed to be idempotent.
+# Style Guide
+#   https://google.github.io/styleguide/shellguide.html
 
 # Parameters: all manadatory and must be prefix with "--" on command line.
 declare -A parameters=( \
@@ -22,6 +25,70 @@ readonly UNATTENDED_UPGRADES_CONF_FILE_PATH="/etc/apt/apt.conf.d/50unattended-up
 # Functions
 source ./logger.sh
 source ./utils.sh
+
+#######################################
+# Update or append a parameter to a file if missing.
+# Arguments:
+#   1) Parameter to set, text string.
+#   2) Value to set, text string.
+#   3) File to update, file path
+# Outputs:
+#   Writes log messages to STDOUT.
+#   Writes error messages to STDERR.
+#######################################
+function update_or_append() {
+  parameter="$1"
+  value="$2"
+  file_path="$3"
+
+  case $(grep "^${parameter}" "${file_path}" | wc -l) in
+  0)
+    logger::info "Parameter '${parameter}' not found in ${file_path}. Adding it."
+    echo "${parameter} \"${value}\";" >> "${file_path}"
+    ;;
+  1)
+    logger::info "Parameter '${parameter}' found in ${file_path}. Updating it."
+    sed -i -e "s|^{parameter}|{parameter} \"${value}\";|g" "${file_path}"
+    ;;
+  *)
+    logger::error "More than one line matched the search criteria. Aborting."
+    exit 1
+    ;;
+  esac
+}
+
+#######################################
+# Update or insert a parameter to a file at a specific location if missing.
+# Arguments:
+#   1) Parameter to set, text string.
+#   2) Value to set, text string.
+#   3) Insertion point, text string
+#   4) File to update, file path
+# Outputs:
+#   Writes log messages to STDOUT.
+#   Writes error messages to STDERR.
+#######################################
+function update_or_insert() {
+  parameter="$1"
+  value="$2"
+  insertion_point="$3"
+  file_path="$4"
+
+  case $(grep "^${parameter}" "${file_path}" | wc -l) in
+    0)
+      logger::info "Parameter '${parameter}' not found in ${file_path}. Inserting it."
+      sed -i -e "/^${insertion_point}.*$/a ${parameter} = ${value}" "${file_path}"
+      ;;
+    1)
+      logger::info "Parameter '${parameter}' found in ${file_path}. Updating it."
+      sed -i -e "s/^${parameter}.*$/${parameter} = ${value}/g" "${file_path}"
+      ;;
+    *)
+      logger::error "More than one line matched the search criteria. Aborting."
+      exit 1
+      ;;
+  esac
+}
 
 function main() {
   utils::set_exit_trap
@@ -76,10 +143,12 @@ function main() {
   logger::title "Configure Aptitude (apt)"
 
   logger::action "Setting APT::Periodic::Download-Upgradeable-Packages parameter..."
-  echo "APT::Periodic::Download-Upgradeable-Packages \"1\";" >> "${AUTO_UPGRADES_CONF_FILE_PATH}"
+  # This parameter is not present in the original file but will be there in subsequent script runs.
+  update_or_append "APT::Periodic::Download-Upgradeable-Packages" "1" "${AUTO_UPGRADES_CONF_FILE_PATH}"
 
   logger::action "Setting APT::Periodic::AutocleanInterval parameter..."
-  echo "APT::Periodic::AutocleanInterval \"7\";" >> "${AUTO_UPGRADES_CONF_FILE_PATH}"
+  # This parameter is not present in the original file but will be there in subsequent script runs.
+  update_or_append "APT::Periodic::AutocleanInterval" "7" "${AUTO_UPGRADES_CONF_FILE_PATH}"
 
   logger::action "Setting Apticron EMAIL parameter..."
   sed -i -e "s/^\(EMAIL=\).*$/\1\"${parameters[server_admin_email]}\"/g" "${APTICRON_CONF_FILE_PATH}"
@@ -120,7 +189,8 @@ function main() {
   sed -i -e "s/^\(relayhost =\).*$/\1 ${parameters[smtp_server_fqdn]}:${parameters[smtp_server_port]}/g" "${POSTFIX_CONF_FILE_PATH}"
 
   logger::action "Adding Postfix smtp_tls_security_level parameter..."
-  sed -i -e "/^smtp_tls_session_cache_database = .*/a smtp_tls_security_level = encrypt" "${POSTFIX_CONF_FILE_PATH}"
+  # This parameter is not present in the original file but will be there in subsequent script runs.
+  update_or_insert "smtp_tls_security_level" "encrypt" "smtp_tls_session_cache_database" "${POSTFIX_CONF_FILE_PATH}"
 
   logger::action "Reloading Postfix configuration file..."
   service postfix reload
