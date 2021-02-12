@@ -14,6 +14,40 @@ readonly MYSQL_USER_OPTIONS_FILE_PATH="${HOME}/.my.cnf"
 # Functions
 
 #######################################
+# Create a MySQL database using passed arguments.
+# Does nothing if the database already exists.
+# Requires a valid MySQL options file in the current user's home directory.
+# Arguments:
+#   database: the name of the database to create
+# Outputs:
+#   Writes message to STDOUT.
+#######################################
+function mysql::create_database_if_not_exists() {
+  local database="$1"
+
+  logger::echo_action "Creating MySQL database if not existing: ${database}..."
+  logger::echo_warn "$(mysql --execute "WARNINGS; CREATE DATABASE IF NOT EXISTS ${database};")"
+}
+
+#######################################
+# Create a MySQL user using passed arguments.
+# Resets the user password if the user already exists.
+# Requires a valid MySQL options file in the current user's home directory.
+# Arguments:
+#   username: the user's username to create
+#   password: the user's password
+# Outputs:
+#   Writes message to STDOUT.
+#######################################
+function mysql::create_user_if_not_exists() {
+  local username="$1"
+  local password="$2"
+
+  logger::echo_action "Creating MySQL database user if not existing: ${username}..."
+  logger::echo_warn "$(mysql --execute "WARNINGS; CREATE USER IF NOT EXISTS ${username} IDENTIFIED BY '${password}';")"
+}
+
+#######################################
 # Create a MySQL options file in the curreny user's home directory.
 # Sets [client] section options with passed arguments.
 # Overwrites existing option file, if any.
@@ -50,40 +84,6 @@ user="${username}@${host%%.*}"
 password="${password}"
 database="${database}"
 EOF
-}
-
-#######################################
-# Create a MySQL database using passed arguments.
-# Does nothing if the database already exists.
-# Requires a valid MySQL options file in the current user's home directory.
-# Arguments:
-#   database: the name of the database to create
-# Outputs:
-#   Writes message to STDOUT.
-#######################################
-function mysql::create_database_if_not_exists() {
-  local database="$1"
-
-  logger::echo_action "Creating MySQL database if not existing: ${database}..."
-  logger::echo_warn "$(mysql --execute "WARNINGS; CREATE DATABASE IF NOT EXISTS ${database};")"
-}
-
-#######################################
-# Create a MySQL user using passed arguments.
-# Resets the user password if the user already exists.
-# Requires a valid MySQL options file in the current user's home directory.
-# Arguments:
-#   username: the user's username to create
-#   password: the user's password
-# Outputs:
-#   Writes message to STDOUT.
-#######################################
-function mysql::create_user_if_not_exists() {
-  local username="$1"
-  local password="$2"
-
-  logger::echo_action "Creating MySQL database user if not existing: ${username}..."
-  logger::echo_warn "$(mysql --execute "WARNINGS; CREATE USER IF NOT EXISTS ${username} IDENTIFIED BY '${password}';")"
 }
 
 #######################################
