@@ -43,11 +43,11 @@ function update_or_append() {
 
   case $(grep "^${parameter}" "${file_path}" | wc -l) in
   0)
-    logger::info "Parameter '${parameter}' not found in ${file_path}. Adding it."
+    logger::info "Parameter '${parameter}' not found in ${file_path}. Appending it..."
     echo "${parameter} \"${value}\";" >> "${file_path}"
     ;;
   1)
-    logger::info "Parameter '${parameter}' found in ${file_path}. Updating it."
+    logger::info "Parameter '${parameter}' found in ${file_path}. Updating it..."
     sed -i -e "s|^{parameter}|{parameter} \"${value}\";|g" "${file_path}"
     ;;
   *)
@@ -76,11 +76,11 @@ function update_or_insert() {
 
   case $(grep "^${parameter}" "${file_path}" | wc -l) in
     0)
-      logger::info "Parameter '${parameter}' not found in ${file_path}. Inserting it."
+      logger::info "Parameter '${parameter}' not found in ${file_path}. Inserting it..."
       sed -i -e "/^${insertion_point}.*$/a ${parameter} = ${value}" "${file_path}"
       ;;
     1)
-      logger::info "Parameter '${parameter}' found in ${file_path}. Updating it."
+      logger::info "Parameter '${parameter}' found in ${file_path}. Updating it..."
       sed -i -e "s/^${parameter}.*$/${parameter} = ${value}/g" "${file_path}"
       ;;
     *)
