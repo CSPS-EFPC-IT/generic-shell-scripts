@@ -37,17 +37,17 @@ source ./utils.sh
 #   Writes error messages to STDERR.
 #######################################
 function update_or_append() {
-  parameter="$1"
-  value="$2"
-  file_path="$3"
+  local parameter="$1"
+  local value="$2"
+  local file_path="$3"
 
-  case $(grep "^${parameter}" "${file_path}" | wc -l) in
+  case $(grep -c "^${parameter}" "${file_path}") in
   0)
-    logger::info "Parameter '${parameter}' not found in ${file_path}. Appending it..."
+    logger::info "Parameter \"${parameter}\" not found in \"${file_path}\". Appending it..."
     echo "${parameter} \"${value}\";" >> "${file_path}"
     ;;
   1)
-    logger::info "Parameter '${parameter}' found in ${file_path}. Updating it..."
+    logger::info "Parameter \"${parameter}\" found in \"${file_path}\". Updating it..."
     sed -i -e "s|^{parameter}|{parameter} \"${value}\";|g" "${file_path}"
     ;;
   *)
@@ -69,18 +69,24 @@ function update_or_append() {
 #   Writes error messages to STDERR.
 #######################################
 function update_or_insert() {
-  parameter="$1"
-  value="$2"
-  insertion_point="$3"
-  file_path="$4"
+  local parameter="$1"
+  local value="$2"
+  local insertion_point="$3"
+  local file_path="$4"
 
-  case $(grep "^${parameter}" "${file_path}" | wc -l) in
+  case $(grep -c "^${parameter}" "${file_path}") in
     0)
-      logger::info "Parameter '${parameter}' not found in ${file_path}. Inserting it..."
-      sed -i -e "/^${insertion_point}.*$/a ${parameter} = ${value}" "${file_path}"
+      logger::info "Parameter \"${parameter}\" not found in \"${file_path}\"."
+      if grep -q "^${insertion_point}" "${file_path}"; then
+        logger::info "Insertion point \"${insertion_point}\" found. Inserting parameter under the insertion point..."
+        sed -i -e "/^${insertion_point}.*$/a ${parameter} = ${value}" "${file_path}"
+      else
+        logger::info "Insertion point \"${insertion_point}\" not found in \"${file_path}\". Aborting."
+        exit 1
+      fi
       ;;
     1)
-      logger::info "Parameter '${parameter}' found in ${file_path}. Updating it..."
+      logger::info "Parameter \"${parameter}\" found in \"${file_path}\". Updating it..."
       sed -i -e "s/^${parameter}.*$/${parameter} = ${value}/g" "${file_path}"
       ;;
     *)
@@ -123,30 +129,30 @@ function main() {
   logger::action "Enabling OS updates..."
   sed -i -e "s|^//\([[:blank:]]*\"\${distro_id}:\${distro_codename}-updates\";\)$|  \1|g" "${UNATTENDED_UPGRADES_CONF_FILE_PATH}"
 
-  logger::action "Setting 'Unattended-Upgrade::Mail' parameter to '${parameters[server_admin_email]}'..."
+  logger::action "Setting \"Unattended-Upgrade::Mail\" parameter to \"${parameters[server_admin_email]}\"..."
   sed -i -e "s|^//\(Unattended-Upgrade::Mail\) .*$|\1 \"${parameters[server_admin_email]}\";|g" "${UNATTENDED_UPGRADES_CONF_FILE_PATH}"
 
-  logger::action "Enabling 'Unattended-Upgrade::Remove-Unused-Kernel-Packages'..."
+  logger::action "Enabling \"Unattended-Upgrade::Remove-Unused-Kernel-Packages\"..."
   sed -i -e "s|^//\(Unattended-Upgrade::Remove-Unused-Kernel-Packages\) .*$|\1 \"true\";|g" "${UNATTENDED_UPGRADES_CONF_FILE_PATH}"
 
-  logger::action "Enabling 'Unattended-Upgrade::Remove-Unused-Dependencies'..."
+  logger::action "Enabling \"Unattended-Upgrade::Remove-Unused-Dependencies\"..."
   sed -i -e "s|^//\(Unattended-Upgrade::Remove-Unused-Dependencies\) .*$|\1 \"true\";|g" "${UNATTENDED_UPGRADES_CONF_FILE_PATH}"
 
-  logger::action "Enabling 'Unattended-Upgrade::Automatic-Reboot'..."
+  logger::action "Enabling \"Unattended-Upgrade::Automatic-Reboot\"..."
   sed -i -e "s|^//\(Unattended-Upgrade::Automatic-Reboot\) .*$|\1 \"true\";|g" "${UNATTENDED_UPGRADES_CONF_FILE_PATH}"
 
-  logger::action "Setting 'Unattended-Upgrade::Automatic-Reboot-Time' to '${parameters[server_reboot_utc_time]}'..."
+  logger::action "Setting \"Unattended-Upgrade::Automatic-Reboot-Time\" to \"${parameters[server_reboot_utc_time]}\"..."
   sed -i -e "s|^//\(Unattended-Upgrade::Automatic-Reboot-Time\) .*$|\1 \"${parameters[server_reboot_utc_time]}\";|g" "${UNATTENDED_UPGRADES_CONF_FILE_PATH}"
 
   #############################################################################
 
   logger::title "Configure Aptitude (apt)"
 
-  logger::action "Setting 'APT::Periodic::Download-Upgradeable-Packages' parameter to '1'..."
+  logger::action "Setting \"APT::Periodic::Download-Upgradeable-Packages\" parameter to \"1\"..."
   # This parameter is not present in the original file but will be there in subsequent script runs.
   update_or_append "APT::Periodic::Download-Upgradeable-Packages" "1" "${AUTO_UPGRADES_CONF_FILE_PATH}"
 
-  logger::action "Setting 'APT::Periodic::AutocleanInterval' parameter to '7'..."
+  logger::action "Setting \"APT::Periodic::AutocleanInterval\" parameter to \"7\"..."
   # This parameter is not present in the original file but will be there in subsequent script runs.
   update_or_append "APT::Periodic::AutocleanInterval" "7" "${AUTO_UPGRADES_CONF_FILE_PATH}"
 
@@ -154,42 +160,42 @@ function main() {
 
   logger::title "Configure Apticron"
 
-  logger::action "Setting 'EMAIL' parameter to '${parameters[server_admin_email]}'..."
+  logger::action "Setting \"EMAIL\" parameter to \"${parameters[server_admin_email]}\"..."
   sed -i -e "s/^\(EMAIL=\).*$/\1\"${parameters[server_admin_email]}\"/g" "${APTICRON_CONF_FILE_PATH}"
 
-  logger::action "Setting 'SYSTEM' parameter to '${parameters[server_resource_name]}'..."
+  logger::action "Setting \"SYSTEM\" parameter to \"${parameters[server_resource_name]}\"..."
   sed -i -e "s/^\(SYSTEM=\).*$/\1\"${parameters[server_resource_name]}\"/g" "${APTICRON_CONF_FILE_PATH}"
 
-  logger::action "Disabling 'NOTIFY_HOLDS' parameter..."
+  logger::action "Disabling \"NOTIFY_HOLDS\" parameter..."
   sed -i -e "s/^\(NOTIFY_HOLDS=\).*$/\1\"0\"/g" "${APTICRON_CONF_FILE_PATH}"
 
-  logger::action "Disabling 'NOTIFY_NEW' parameter..."
+  logger::action "Disabling \"NOTIFY_NEW\" parameter..."
   sed -i -e "s/^\(NOTIFY_NEW=\).*$/\1\"0\"/g" "${APTICRON_CONF_FILE_PATH}"
 
-  logger::action "Enabling 'NOTIFY_NO_UPDATES' parameter..."
+  logger::action "Enabling \"NOTIFY_NO_UPDATES\" parameter..."
   sed -i -e "s/^\(NOTIFY_NO_UPDATES=\).*$/\1\"0\"/g" "${APTICRON_CONF_FILE_PATH}"
 
-  logger::action "Setting 'CUSTOM_SUBJECT' parameter to '[apticron] \$SYSTEM: \$NUM_PACKAGES package update(s)'..."
+  logger::action "Setting \"CUSTOM_SUBJECT\" parameter to '[apticron] \$SYSTEM: \$NUM_PACKAGES package update(s)'..."
   sed -i -e "s/^# \(CUSTOM_SUBJECT=\)\"\".*$/\1'[apticron] \$SYSTEM: \$NUM_PACKAGES package update(s)'/g" "${APTICRON_CONF_FILE_PATH}"
 
-  logger::action "Setting 'CUSTOM_NO_UPDATES_SUBJECT' parameter to '[apticron] \$SYSTEM: no updates'..."
+  logger::action "Setting \"CUSTOM_NO_UPDATES_SUBJECT\" parameter to '[apticron] \$SYSTEM: no updates'..."
   sed -i -e "s/^# \(CUSTOM_NO_UPDATES_SUBJECT=\)\"\".*$/\1'[apticron] \$SYSTEM: no updates'/g" "${APTICRON_CONF_FILE_PATH}"
 
   #############################################################################
 
   logger::title "Configure Postfix"
 
-  logger::action "Setting 'myhostname' parameter to '${parameters[server_fqdn]}'..."
+  logger::action "Setting \"myhostname\" parameter to \"${parameters[server_fqdn]}\"..."
   sed -i -e "s/^\(myhostname =\).*$/\1 ${parameters[server_fqdn]}/g" "${POSTFIX_CONF_FILE_PATH}"
 
-  logger::action "Setting 'myorigin' parameter to '\$myhostname'..."
+  logger::action "Setting \"myorigin\" parameter to \"\$myhostname\"..."
   # This setting may not be present in file. If it is, we update it.
   sed -i -e "s/^\(myorigin =\).*$/\1 \$myhostname/g" "${POSTFIX_CONF_FILE_PATH}"
 
-  logger::action "Setting 'relayhost' parameter to '${parameters[smtp_server_fqdn]}:${parameters[smtp_server_port]}'..."
+  logger::action "Setting \"relayhost\" parameter to \"${parameters[smtp_server_fqdn]}:${parameters[smtp_server_port]}\"..."
   sed -i -e "s/^\(relayhost =\).*$/\1 ${parameters[smtp_server_fqdn]}:${parameters[smtp_server_port]}/g" "${POSTFIX_CONF_FILE_PATH}"
 
-  logger::action "Setting 'smtp_tls_security_level' parameter to 'encrypt'..."
+  logger::action "Setting \"smtp_tls_security_level\" parameter to \"encrypt\"..."
   # This parameter is not present in the original file but will be there in subsequent script runs.
   update_or_insert "smtp_tls_security_level" "encrypt" "smtp_tls_session_cache_database" "${POSTFIX_CONF_FILE_PATH}"
 
