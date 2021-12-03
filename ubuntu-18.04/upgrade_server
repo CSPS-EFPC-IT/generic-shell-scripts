@@ -14,6 +14,9 @@ source ./utils.sh
 function main() {
   utils::set_exit_trap
 
+  local waiting_time
+  local -r MAX_WAIT_TIME=60
+
   #############################################################################
 
   logger::title "Start of $0"
@@ -25,6 +28,13 @@ function main() {
   #############################################################################
 
   logger::action "Updating server package index files..."
+  # Fix for issue-881.
+  waiting_time=0
+  while [[ $(pgrep apt) && ${waiting_time} -lt ${MAX_WAIT_TIME} ]]; do
+    ((waiting_time++))
+    logger::info "Waiting for other apt commands to finish: ${waiting_time} sec / ${MAX_WAIT_TIME} sec...";
+    sleep 1;
+  done;
   apt update
 
   logger::action "Upgrading all installed server packages to their latest version and apply available security patches..."
