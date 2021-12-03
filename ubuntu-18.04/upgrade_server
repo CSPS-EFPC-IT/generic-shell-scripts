@@ -35,7 +35,12 @@ function main() {
     logger::info "Waiting for other apt commands to finish: ${waiting_time} sec / ${MAX_WAIT_TIME} sec...";
     sleep 1;
   done;
-  apt update
+  if [[ $(pgrep apt) ]]; then
+    logger::error "Max waiting time reached. Aborting.";
+    exit 1
+  else
+    apt update
+  fi
 
   logger::action "Upgrading all installed server packages to their latest version and apply available security patches..."
   apt upgrade -y
