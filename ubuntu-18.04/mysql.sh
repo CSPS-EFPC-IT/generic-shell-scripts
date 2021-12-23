@@ -26,7 +26,7 @@ function mysql::create_database_if_not_exists() {
   local database="$1"
 
   logger::action "Creating MySQL database if not existing: ${database}..."
-  logger::warn "$(mysql --execute "WARNINGS; CREATE DATABASE IF NOT EXISTS ${database};")"
+  logger::warn "$(mysql --execute "WARNINGS; CREATE DATABASE IF NOT EXISTS \`${database}\`;")"
 }
 
 #######################################
@@ -44,7 +44,7 @@ function mysql::create_user_if_not_exists() {
   local password="$2"
 
   logger::action "Creating MySQL database user if not existing: ${username}..."
-  logger::warn "$(mysql --execute "WARNINGS; CREATE USER IF NOT EXISTS ${username} IDENTIFIED BY '${password}';")"
+  logger::warn "$(mysql --execute "WARNINGS; CREATE USER IF NOT EXISTS \`${username}\` IDENTIFIED BY '${password}';")"
 }
 
 #######################################
@@ -119,5 +119,5 @@ function mysql::grant_all_privileges() {
   local username="$2"
 
   logger::action "Granting all privileges on MySQL '${database}' database objects to user '${username}'..."
-  logger::warn "$(mysql --execute "WARNINGS; GRANT ALL PRIVILEGES ON ${database}.* TO ${username}; FLUSH PRIVILEGES;")"
+  logger::warn "$(mysql --execute "WARNINGS; GRANT ALL PRIVILEGES ON \`${database}\`.* TO \`${username}\`;")"
 }
