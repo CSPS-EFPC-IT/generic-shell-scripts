@@ -14,6 +14,56 @@ readonly MYSQL_USER_OPTIONS_FILE_PATH="${HOME}/.my.cnf"
 # Functions
 
 #######################################
+# Create a MySQL database and crendentials from passed arguments.
+# The database and credentials are created if not existing.
+# The new database name is set to the credential username.
+# Arguments:
+#   The database server FQDN, a string.
+#   The database adminstrator's username, a string.
+#   The database adminstrator's password, a string.
+#   The new database credentials username, a string.
+#   The new database credentials password, a string.
+# Outputs:
+#   Writes message to STDOUT.
+#######################################
+function mysql::create_database_and_credentials() {
+
+  # Parameters
+  local database_server_fqdn="$1"
+  local database_server_admin_username="$2"
+  local database_server_admin_password="$3"
+  local database_server_new_credentials_username="$4"
+  local database_server_new_credentials_password="$5"
+
+  # Variables
+  local database_server_new_credentials_database="${database_server_new_credentials_username}"
+
+  mysql::create_user_options_file \
+    "${database_server_admin_username}" \
+    "${database_server_admin_password}" \
+    "${database_server_fqdn}" \
+    "3306" \
+    "mysql"
+
+  mysql::create_database_if_not_exists \
+    "${database_server_new_credentials_database}"
+
+  mysql::create_user_if_not_exists \
+    "${database_server_new_credentials_username}" \
+    "${database_server_new_credentials_password}"
+
+  mysql::set_user_password \
+    "${database_server_new_credentials_username}" \
+    "${database_server_new_credentials_password}"
+
+  mysql::grant_all_privileges \
+    "${database_server_new_credentials_database}" \
+    "${database_server_new_credentials_username}"
+
+  mysql::delete_user_options_file
+}
+
+#######################################
 # Create a MySQL database using passed arguments.
 # Does nothing if the database already exists.
 # Requires a valid MySQL options file in the current user's home directory.
@@ -25,13 +75,12 @@ readonly MYSQL_USER_OPTIONS_FILE_PATH="${HOME}/.my.cnf"
 function mysql::create_database_if_not_exists() {
   local database="$1"
 
-  logger::action "Creating MySQL database if not existing: ${database}..."
-  logger::warn "$(mysql --execute "WARNINGS; CREATE DATABASE IF NOT EXISTS ${database};")"
+  logger::info "Creating MySQL database if not existing..."
+  logger::debug "$(mysql --execute "WARNINGS; CREATE DATABASE IF NOT EXISTS \`${database}\`;")"
 }
 
 #######################################
 # Create a MySQL user using passed arguments.
-# Resets the user password if the user already exists.
 # Requires a valid MySQL options file in the current user's home directory.
 # Arguments:
 #   username: the user's username to create
@@ -43,8 +92,8 @@ function mysql::create_user_if_not_exists() {
   local username="$1"
   local password="$2"
 
-  logger::action "Creating MySQL database user if not existing: ${username}..."
-  logger::warn "$(mysql --execute "WARNINGS; CREATE USER IF NOT EXISTS ${username} IDENTIFIED BY '${password}';")"
+  logger::info "Creating MySQL database user if not existing..."
+  logger::debug "$(mysql --execute "WARNINGS; CREATE USER IF NOT EXISTS \`${username}\` IDENTIFIED BY '${password}';")"
 }
 
 #######################################
@@ -69,20 +118,20 @@ function mysql::create_user_options_file() {
   local port="$4"
   local database="$5"
 
-  logger::action "Creating MySQL options file: ${MYSQL_USER_OPTIONS_FILE_PATH}..."
+  logger::info "Creating MySQL options file: ${MYSQL_USER_OPTIONS_FILE_PATH}..."
   if [[ -f "${MYSQL_USER_OPTIONS_FILE_PATH}" ]]; then
     logger::warn "File already exists. Overwriting content."
   else
     touch "${MYSQL_USER_OPTIONS_FILE_PATH}"
   fi
-  chmod 400 "${MYSQL_USER_OPTIONS_FILE_PATH}"
+  chmod 600 "${MYSQL_USER_OPTIONS_FILE_PATH}"
   cat <<EOF > "${MYSQL_USER_OPTIONS_FILE_PATH}"
 [client]
-host="${host}"
-port="${port}"
-user="${username}@${host%%.*}"
-password="${password}"
-database="${database}"
+host=${host}
+port=${port}
+user=${username}@${host%%.*}
+password=${password}
+database=${database}
 EOF
 }
 
@@ -97,7 +146,7 @@ EOF
 #######################################
 function mysql::delete_user_options_file() {
 
-  logger::action "Deleting MySQL options file: ${MYSQL_USER_OPTIONS_FILE_PATH}..."
+  logger::info "Deleting MySQL options file: ${MYSQL_USER_OPTIONS_FILE_PATH}..."
   if [[ -f "${MYSQL_USER_OPTIONS_FILE_PATH}" ]]; then
     rm -f "${MYSQL_USER_OPTIONS_FILE_PATH}"
   else
@@ -118,6 +167,23 @@ function mysql::grant_all_privileges() {
   local database="$1"
   local username="$2"
 
-  logger::action "Granting all privileges on MySQL '${database}' database objects to user '${username}'..."
-  logger::warn "$(mysql --execute "WARNINGS; GRANT ALL PRIVILEGES ON ${database}.* TO ${username}; FLUSH PRIVILEGES;")"
+  logger::info "Granting all privileges on MySQL database objects to user..."
+  logger::debug "$(mysql --execute "WARNINGS; GRANT ALL PRIVILEGES ON \`${database}\`.* TO \`${username}\`;")"
+}
+
+#######################################
+# Set a MySQL user's password.
+# Requires a valid MySQL options file in the current user's home directory.
+# Arguments:
+#   username: the user's username to create
+#   password: the user's password
+# Outputs:
+#   Writes message to STDOUT.
+#######################################
+function mysql::set_user_password() {
+  local username="$1"
+  local password="$2"
+
+  logger::info "Setting MySQL user's password..."
+  logger::debug "$(mysql --execute "WARNINGS; ALTER USER \`${username}\` IDENTIFIED BY '${password}'";)"
 }
