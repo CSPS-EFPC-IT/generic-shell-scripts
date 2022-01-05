@@ -43,7 +43,7 @@ function apache2::update_config_file() {
   logger::action "Setting \"${parameter}\" to \"${value}\" in ${config_file_path}..."
 
   # Check if one and only one line match the search criteria.
-  case $(grep "^[[:blank:]]*${parameter}[[:blank:]].*$" "${config_file_path}" | wc -l) in
+  case $(grep -c "^[[:blank:]]*${parameter}[[:blank:]].*$" "${config_file_path}") in
     0)
       logger::error "No line matched the search criteria. Aborting."
       exit 1
