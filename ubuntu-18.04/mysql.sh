@@ -42,8 +42,8 @@ function create_database_and_credentials() {
     "${database_server_admin_username}" \
     "${database_server_admin_password}" \
     "${database_server_fqdn}" \
-    "5432" \
-    "postgres"
+    "3306" \
+    "mysql"
 
   mysql::create_database_if_not_exists \
     "${database_server_new_credentials_database}"
