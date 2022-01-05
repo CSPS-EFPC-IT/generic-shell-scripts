@@ -26,7 +26,7 @@ readonly MYSQL_USER_OPTIONS_FILE_PATH="${HOME}/.my.cnf"
 # Outputs:
 #   Writes message to STDOUT.
 #######################################
-function create_database_and_credentials() {
+function mysql::create_database_and_credentials() {
 
   # Parameters
   local database_server_fqdn="$1"
