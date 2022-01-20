@@ -143,10 +143,10 @@ function postgresql::create_user_options_file() {
 [${POSTGRESQL_SERVICE_NAME}]
 host=${host}
 port=${port}
-user=${username}@${host%%.*}
+user=${username}
 password=${password}
 dbname=${database}
-sslmode=require
+sslmode=prefer
 EOF
 }
 
