@@ -146,7 +146,7 @@ port=${port}
 user=${username}@${host%%.*}
 password=${password}
 dbname=${database}
-sslmode=require
+sslmode=prefer
 EOF
 }
 
