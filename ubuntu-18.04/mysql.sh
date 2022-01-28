@@ -129,7 +129,7 @@ function mysql::create_user_options_file() {
 [client]
 host=${host}
 port=${port}
-user=${username}@${host%%.*}
+user=${username}
 password=${password}
 database=${database}
 EOF
