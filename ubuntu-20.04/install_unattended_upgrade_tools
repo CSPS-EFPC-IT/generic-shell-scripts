@@ -36,7 +36,9 @@ source ./logger.sh
 source ./utils.sh
 
 #######################################
-# Update or append a parameter to a file if missing.
+# Update or append a parameter to unattended-upgrade configuration file if
+# missing. The parameter assignment format is '[parameter] "[value]";'.
+# Ex.: xyz "abc";
 # Arguments:
 #   1) Parameter to set, text string.
 #   2) Value to set, text string.
@@ -45,19 +47,21 @@ source ./utils.sh
 #   Writes log messages to STDOUT.
 #   Writes error messages to STDERR.
 #######################################
-function update_or_append() {
+function update_or_append_for_unattended_upgrade() {
   local parameter="$1"
   local value="$2"
   local file_path="$3"
 
+  logger::info "Setting \"${parameter}\" parameter to \"${value}\" in \"${file_path}\"..."
+
   case $(grep -c "^${parameter}" "${file_path}") in
   0)
-    logger::info "Parameter \"${parameter}\" not found in \"${file_path}\". Appending it..."
+    logger::info "Parameter not found. Appending it to file..."
     echo "${parameter} \"${value}\";" >> "${file_path}"
     ;;
   1)
-    logger::info "Parameter \"${parameter}\" found in \"${file_path}\". Updating it..."
-    sed -i -e "s|^{parameter}|{parameter} \"${value}\";|g" "${file_path}"
+    logger::info "Parameter found. Updating it..."
+    sed -i -e "s|^{parameter}|{parameter} \"${value}\";|1" "${file_path}"
     ;;
   *)
     logger::error "More than one line matched the search criteria. Aborting."
@@ -67,41 +71,37 @@ function update_or_append() {
 }
 
 #######################################
-# Update or insert a parameter to a file at a specific location if missing.
+# Update or append a parameter to Postfix configuration file if missing.
+# The parameter assignment format is '[parameter] = [value]'.
+# Ex.: xyz = abc
 # Arguments:
 #   1) Parameter to set, text string.
 #   2) Value to set, text string.
-#   3) Insertion point, text string
-#   4) File to update, file path
+#   3) File to update, file path
 # Outputs:
 #   Writes log messages to STDOUT.
 #   Writes error messages to STDERR.
 #######################################
-function update_or_insert() {
+function update_or_append_for_postfix() {
   local parameter="$1"
   local value="$2"
-  local insertion_point="$3"
-  local file_path="$4"
+  local file_path="$3"
+
+  logger::info "Setting \"${parameter}\" parameter to \"${value}\" in \"${file_path}\"..."
 
   case $(grep -c "^${parameter}" "${file_path}") in
-    0)
-      logger::info "Parameter \"${parameter}\" not found in \"${file_path}\"."
-      if grep -q "^${insertion_point}" "${file_path}"; then
-        logger::info "Insertion point \"${insertion_point}\" found. Inserting parameter under the insertion point..."
-        sed -i -e "/^${insertion_point}.*$/a ${parameter} = ${value}" "${file_path}"
-      else
-        logger::info "Insertion point \"${insertion_point}\" not found in \"${file_path}\". Aborting."
-        exit 1
-      fi
-      ;;
-    1)
-      logger::info "Parameter \"${parameter}\" found in \"${file_path}\". Updating it..."
-      sed -i -e "s/^${parameter}.*$/${parameter} = ${value}/g" "${file_path}"
-      ;;
-    *)
-      logger::error "More than one line matched the search criteria. Aborting."
-      exit 1
-      ;;
+  0)
+    logger::info "Parameter not found. Appending it to file..."
+    echo "${parameter} = ${value}" >> "${file_path}"
+    ;;
+  1)
+    logger::info "Parameter found. Updating it..."
+    sed -i -e "s|^{parameter}|{parameter} = ${value}|1" "${file_path}"
+    ;;
+  *)
+    logger::error "More than one line matched the search criteria. Aborting."
+    exit 1
+    ;;
   esac
 }
 
@@ -155,19 +155,17 @@ function main() {
 
   logger::title "Aptitude (apt) Configuration"
 
-  logger::info "Setting \"APT::Periodic::Download-Upgradeable-Packages\" parameter to \"1\"..."
-  # This parameter is not present in the original file but will be there in subsequent script runs.
-  update_or_append "APT::Periodic::Download-Upgradeable-Packages" "1" "${AUTO_UPGRADES_CONF_FILE_PATH}"
-
-  logger::info "Setting \"APT::Periodic::AutocleanInterval\" parameter to \"7\"..."
-  # This parameter is not present in the original file but will be there in subsequent script runs.
-  update_or_append "APT::Periodic::AutocleanInterval" "7" "${AUTO_UPGRADES_CONF_FILE_PATH}"
+  # The following parameters are not present in the original file but will be there in subsequent script runs.
+  update_or_append_for_unattended_upgrade "APT::Periodic::Download-Upgradeable-Packages" "1" "${AUTO_UPGRADES_CONF_FILE_PATH}"
+  update_or_append_for_unattended_upgrade "APT::Periodic::AutocleanInterval" "7" "${AUTO_UPGRADES_CONF_FILE_PATH}"
 
   #############################################################################
 
   logger::title "Apticron Configuration"
 
   logger::info "Initializing Apticron Configuration file..."
+  # Since we are always starting from the default configuration file (we never change),
+  # the same transformations are applied every time.
   cp "${APTICRON_DEFAULT_CONF_FILE_PATH}" "${APTICRON_CONF_FILE_PATH}"
 
   logger::info "Setting \"EMAIL\" parameter to \"${parameters[server_admin_email]}\"..."
@@ -203,13 +201,14 @@ function main() {
   logger::info "Setting \"myhostname\" parameter to \"${parameters[server_fqdn]}\" in ${POSTFIX_CONF_FILE_PATH}..."
   sed -i -e "s/^\(myhostname =\).*$/\1 ${parameters[server_fqdn]}/g" "${POSTFIX_CONF_FILE_PATH}"
 
-  logger::info "Setting \"myorigin\" parameter to \"\$myhostname\" in ${POSTFIX_CONF_FILE_PATH}..."
-  # This setting may not be present in the original file but will be there in subsequent script runs.
+  # Setting myorigin to $myhostname.
+  # This parameter is not present in the original file but will be there in subsequent script runs.
   # shellcheck disable=SC2016
-  update_or_append "myorigin" '$myhostname' "${POSTFIX_CONF_FILE_PATH}"
+  update_or_append_for_postfix "myorigin" '$myhostname' "${POSTFIX_CONF_FILE_PATH}"
 
   logger::action "Enabling SMTP relay authentication"
   # Ref.: https://www.linode.com/docs/guides/postfix-smtp-debian7/
+
   # Create SASL Password files
   logger::info "Creating Postfix SASL Password file..."
   echo "${parameters[smtp_server_fqdn]} ${parameters[smtp_server_username]}:${parameters[smtp_server_password]}" > "${POSTFIX_SASL_PASSWORD_PATH}"
@@ -226,29 +225,22 @@ function main() {
   logger::info "Setting \"relayhost\" parameter to \"${parameters[smtp_server_fqdn]}:${parameters[smtp_server_port]}\" in ${POSTFIX_CONF_FILE_PATH}..."
   sed -i -e "s/^\(relayhost =\).*$/\1 ${parameters[smtp_server_fqdn]}:${parameters[smtp_server_port]}/g" "${POSTFIX_CONF_FILE_PATH}"
 
-  logger::info "Setting \"smtp_sasl_auth_enable\" to \"yes\" in ${POSTFIX_CONF_FILE_PATH}..."
-  update_or_append "smtp_sasl_auth_enable" "yes" "${POSTFIX_CONF_FILE_PATH}"
+  update_or_append_for_postfix "smtp_sasl_auth_enable" "yes" "${POSTFIX_CONF_FILE_PATH}"
 
-  logger::info "Setting \"smtp_sasl_security_options\" to \"noanonymous\" in ${POSTFIX_CONF_FILE_PATH}..."
-  update_or_append "smtp_sasl_security_options" "noanonymous" "${POSTFIX_CONF_FILE_PATH}"
+  update_or_append_for_postfix "smtp_sasl_security_options" "noanonymous" "${POSTFIX_CONF_FILE_PATH}"
 
-  logger::info "Setting \"smtp_sasl_password_maps\" to \"hash:${POSTFIX_SASL_PASSWORD_PATH}\" in ${POSTFIX_CONF_FILE_PATH}..."
-  update_or_append "smtp_sasl_password_maps" "hash:${POSTFIX_SASL_PASSWORD_PATH}" "${POSTFIX_CONF_FILE_PATH}"
+  update_or_append_for_postfix "smtp_sasl_password_maps" "hash:${POSTFIX_SASL_PASSWORD_PATH}" "${POSTFIX_CONF_FILE_PATH}"
 
-  logger::info "Setting \"smtp_use_tls\" to \"yes\" in ${POSTFIX_CONF_FILE_PATH}..."
-  update_or_append "smtp_use_tls" "yes" "${POSTFIX_CONF_FILE_PATH}"
+  update_or_append_for_postfix "smtp_use_tls" "yes" "${POSTFIX_CONF_FILE_PATH}"
 
   logger::action "Enforcing FROM address on all outgoing emails"
   # Ref.: https://serverfault.com/questions/147921/forcing-the-from-address-when-postfix-relays-over-smtp
 
-  logger::info "Setting \"sender_canonical_classes\" to \"envelope_sender, header_sender\" in ${POSTFIX_CONF_FILE_PATH}..."
-  update_or_append "sender_canonical_classes" "envelope_sender, header_sender" "${POSTFIX_CONF_FILE_PATH}"
+  update_or_append_for_postfix "sender_canonical_classes" "envelope_sender, header_sender" "${POSTFIX_CONF_FILE_PATH}"
 
-  logger::info "Setting \"sender_canonical_maps\" to \"regexp:${POSTFIX_SENDER_CANONICAL_MAPS}\" in ${POSTFIX_CONF_FILE_PATH}..."
-  update_or_append "sender_canonical_maps" "regexp:${POSTFIX_SENDER_CANONICAL_MAPS}" "${POSTFIX_CONF_FILE_PATH}"
+  update_or_append_for_postfix "sender_canonical_maps" "regexp:${POSTFIX_SENDER_CANONICAL_MAPS}" "${POSTFIX_CONF_FILE_PATH}"
 
-  logger::info "Setting \"smtp_header_checks\" to \"regexp:${POSTFIX_SMTP_HEADER_CHECKS}\" in ${POSTFIX_CONF_FILE_PATH}..."
-  update_or_append "smtp_header_checks" "regexp:${POSTFIX_SMTP_HEADER_CHECKS}" "${POSTFIX_CONF_FILE_PATH}"
+  update_or_append_for_postfix "smtp_header_checks" "regexp:${POSTFIX_SMTP_HEADER_CHECKS}" "${POSTFIX_CONF_FILE_PATH}"
 
   logger::info "Creating Postfix Sender Canonical Maps file: \"${POSTFIX_SENDER_CANONICAL_MAPS}\"..."
   echo "/.+/    ${parameters[smtp_server_from_address]}" > "${POSTFIX_SENDER_CANONICAL_MAPS}"
