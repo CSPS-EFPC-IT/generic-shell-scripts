@@ -61,7 +61,7 @@ function update_or_append_for_unattended_upgrade() {
     ;;
   1)
     logger::info "Parameter found. Updating it..."
-    sed -i -e "s|^{parameter}|{parameter} \"${value}\";|1" "${file_path}"
+    sed -i -e "s|^${parameter}.*|${parameter} \"${value}\";|" "${file_path}"
     ;;
   *)
     logger::error "More than one line matched the search criteria. Aborting."
@@ -96,7 +96,7 @@ function update_or_append_for_postfix() {
     ;;
   1)
     logger::info "Parameter found. Updating it..."
-    sed -i -e "s|^{parameter}|{parameter} = ${value}|1" "${file_path}"
+    sed -i -e "s|^${parameter}.*|${parameter} = ${value}|" "${file_path}"
     ;;
   *)
     logger::error "More than one line matched the search criteria. Aborting."
