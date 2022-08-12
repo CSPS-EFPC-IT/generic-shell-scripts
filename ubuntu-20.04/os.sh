@@ -26,7 +26,7 @@ function os::add_hosts_file_entry() {
 
   local -r HOSTS_FILE_PATH="/etc/hosts"
 
-  logger::action "Adding entry for ${fqdn} in ${HOSTS_FILE_PATH}..."
+  logger::action "Adding entry for \"${fqdn}\" in \"${HOSTS_FILE_PATH}\"..."
   if ! grep -q "${fqdn}" "${HOSTS_FILE_PATH}"; then
     printf "# %s\n%s %s\n" "${comment}" "${ip}" "${fqdn}" >> "${HOSTS_FILE_PATH}"
   else
