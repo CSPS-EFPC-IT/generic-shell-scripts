@@ -23,7 +23,7 @@ readonly MYSQL_USER_OPTIONS_FILE_PATH="${HOME}/.my.cnf"
 #   The database adminstrator's password, a string.
 #   The new database credentials username, a string.
 #   The new database credentials password, a string.
-#   The new database name, a string. Default to the new crendentiala username if not spectifed.
+#   The new database name, a string. Default to the new credentials username if not spectifed.
 # Outputs:
 #   Writes message to STDOUT.
 #######################################
