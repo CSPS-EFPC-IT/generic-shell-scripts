@@ -48,7 +48,7 @@ function update_or_append() {
     ;;
   1)
     logger::info "Parameter \"${parameter}\" found in \"${file_path}\". Updating it..."
-    sed -i -e "s|^{parameter}|{parameter} \"${value}\";|g" "${file_path}"
+    sed -i -e "s|^${parameter}.*|${parameter} \"${value}\";|g" "${file_path}"
     ;;
   *)
     logger::error "More than one line matched the search criteria. Aborting."
