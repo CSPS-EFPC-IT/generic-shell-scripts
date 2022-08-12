@@ -196,7 +196,7 @@ function main() {
 
   logger::action "Basic configuration"
 
-  logger::info "Setting \"myhostname\" parameter to \"${parameters[server_fqdn]}\" in ${POSTFIX_CONF_FILE_PATH}..."
+  logger::info "Setting \"myhostname\" parameter to \"${parameters[server_fqdn]}\" in \"${POSTFIX_CONF_FILE_PATH}\"..."
   sed -i -e "s/^\(myhostname =\).*$/\1 ${parameters[server_fqdn]}/g" "${POSTFIX_CONF_FILE_PATH}"
 
   # Setting myorigin to $myhostname.
@@ -219,7 +219,7 @@ function main() {
   logger::info "Setting permissions on Postfix SASL password files..."
   chmod 600 "${POSTFIX_SASL_PASSWORD_PATH}" "${POSTFIX_SASL_PASSWORD_DB_PATH}"
 
-  logger::info "Setting \"relayhost\" parameter to \"${parameters[smtp_server_fqdn]}:${parameters[smtp_server_port]}\" in ${POSTFIX_CONF_FILE_PATH}..."
+  logger::info "Setting \"relayhost\" parameter to \"${parameters[smtp_server_fqdn]}:${parameters[smtp_server_port]}\" in \"${POSTFIX_CONF_FILE_PATH}\"..."
   sed -i -e "s/^\(relayhost =\).*$/\1 ${parameters[smtp_server_fqdn]}:${parameters[smtp_server_port]}/g" "${POSTFIX_CONF_FILE_PATH}"
 
   update_or_append_for_postfix "smtp_sasl_auth_enable" "yes" "${POSTFIX_CONF_FILE_PATH}"
