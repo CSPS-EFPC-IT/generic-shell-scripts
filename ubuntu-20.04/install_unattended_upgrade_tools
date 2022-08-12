@@ -28,7 +28,7 @@ readonly POSTFIX_CONF_FILE_PATH="/etc/postfix/main.cf"
 readonly POSTFIX_SASL_PASSWORD_DB_PATH="/etc/postfix/sasl_passwd.db"
 readonly POSTFIX_SASL_PASSWORD_PATH="/etc/postfix/sasl_passwd"
 readonly POSTFIX_SENDER_CANONICAL_MAPS="/etc/postfix/sender_canonical_maps"
-readonly POSTFIX_SMTP_HEADER_CHECKS="/etc/postfix/header_check"
+readonly POSTFIX_SMTP_HEADER_CHECKS="/etc/postfix/header_checks"
 readonly UNATTENDED_UPGRADES_CONF_FILE_PATH="/etc/apt/apt.conf.d/50unattended-upgrades"
 
 # Functions
@@ -149,8 +149,6 @@ function main() {
   logger::info "Setting \"Unattended-Upgrade::Automatic-Reboot-Time\" to \"${parameters[server_reboot_utc_time]}\"..."
   sed -i -e "s|^//\(Unattended-Upgrade::Automatic-Reboot-Time\) .*$|\1 \"${parameters[server_reboot_utc_time]}\";|g" "${UNATTENDED_UPGRADES_CONF_FILE_PATH}"
 
-  logger::info "Unattended-Upgrades Configuration - Done"
-
   #############################################################################
 
   logger::title "Aptitude (apt) Configuration"
@@ -209,7 +207,6 @@ function main() {
   logger::action "Enabling SMTP relay authentication"
   # Ref.: https://www.linode.com/docs/guides/postfix-smtp-debian7/
 
-  # Create SASL Password files
   logger::info "Creating Postfix SASL Password file..."
   echo "${parameters[smtp_server_fqdn]} ${parameters[smtp_server_username]}:${parameters[smtp_server_password]}" > "${POSTFIX_SASL_PASSWORD_PATH}"
 
@@ -231,7 +228,10 @@ function main() {
 
   update_or_append_for_postfix "smtp_sasl_password_maps" "hash:${POSTFIX_SASL_PASSWORD_PATH}" "${POSTFIX_CONF_FILE_PATH}"
 
-  update_or_append_for_postfix "smtp_use_tls" "yes" "${POSTFIX_CONF_FILE_PATH}"
+  # Setting smtp_use_tls = yes
+  # "With Postfix 2.3 and later use smtp_tls_security_level instead."
+  # Ref.: https://www.postfix.org/postconf.5.html#smtp_use_tls
+  update_or_append_for_postfix "smtp_tls_security_level" "encrypt" "${POSTFIX_CONF_FILE_PATH}"
 
   logger::action "Enforcing FROM address on all outgoing emails"
   # Ref.: https://serverfault.com/questions/147921/forcing-the-from-address-when-postfix-relays-over-smtp
