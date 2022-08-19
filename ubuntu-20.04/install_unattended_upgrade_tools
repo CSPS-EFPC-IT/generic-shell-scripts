@@ -246,7 +246,11 @@ function main() {
   echo "/.+/    ${parameters[smtp_server_from_address]}" > "${POSTFIX_SENDER_CANONICAL_MAPS}"
 
   logger::info "Creating Postfix SMTP Header Checks file: \"${POSTFIX_SMTP_HEADER_CHECKS}\"..."
-  echo "/From:.*/ REPLACE From: Do not reply / Ne pas répondre <${parameters[smtp_server_from_address]}>" > "${POSTFIX_SMTP_HEADER_CHECKS}"
+  # Using "Do not reply / Ne pas répondre" as the FROM Address' friendly name.
+  # Since email headers must be encoded using ASCII-7 for compatibility reason,
+  # UTF-8 characters must be encoded using MIME encoded word syntax (either Q or base64 encoding).
+  # ref.: https://docs.aws.amazon.com/ses/latest/dg/send-email-raw.html#send-email-raw-mime
+  echo "/From:.*/ REPLACE From: \"Do not reply / Ne pas r=?utf-8?B?w6k=?=pondre\" <${parameters[smtp_server_from_address]}>" > "${POSTFIX_SMTP_HEADER_CHECKS}"
 
   logger::action "Reloading configuration file..."
   service postfix reload
