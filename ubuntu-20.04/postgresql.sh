@@ -15,13 +15,13 @@ readonly POSTGRESQL_SERVICE_NAME="mydb"
 # Functions
 
 #######################################
-# Create a PostgreSQL database and crendentials from passed arguments.
+# Create a PostgreSQL database and credentials from passed arguments.
 # The database and credentials are created if not existing.
-# The new database name is set to the credential username.
+# The credential's password is set/reset in all cases.
 # Arguments:
 #   The database server FQDN, a string.
-#   The database adminstrator's username, a string.
-#   The database adminstrator's password, a string.
+#   The database administrator's username, a string.
+#   The database administrator's password, a string.
 #   The new database credentials username, a string.
 #   The new database credentials password, a string.
 #   The new database name, a string. Default to the new credentials username if not spectifed.
