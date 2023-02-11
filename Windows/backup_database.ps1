@@ -8,11 +8,11 @@ Param(
     $backupRootDirectoryPath,
 
     [parameter(
-        HelpMessage="The number of days to keep the daily backups. Allowed values: [1-365]."
+        HelpMessage="The number of days to keep the daily backups. Allowed values: [1-730]."
     )]
     [int]
-    [ValidateRange(1, 365)]
-    $dailyBackupRetentionDays = 7,
+    [ValidateRange(1, 730)]
+    $dailyBackupRetentionDays = 15,
 
     [parameter(
         HelpMessage="The name of the database to back up.",
@@ -54,11 +54,11 @@ Param(
     $monthlyBackupDay = 15,
 
     [parameter(
-        HelpMessage="The number of days to keep the monthly backups. Allowed values: [1-365]."
+        HelpMessage="The number of days to keep the monthly backups. Allowed values: [1-730]."
     )]
     [int]
-    [ValidateRange(1, 365)]
-    $monthlyBackupRetentionDays = 90,
+    [ValidateRange(1, 730)]
+    $monthlyBackupRetentionDays = 730,
 
     [parameter(
         HelpMessage="Whether or not database backup logs should be verbatim."
@@ -82,10 +82,10 @@ Param(
     $weeklyBackupDay = "Sunday",
 
     [parameter(
-        HelpMessage="The number of days to keep the weekly backups. Allowed values: [1-365]."
+        HelpMessage="The number of days to keep the weekly backups. Allowed values: [1-730]."
     )]
     [int]
-    [ValidateRange(1, 365)]
+    [ValidateRange(1, 730)]
     $weeklyBackupRetentionDays = 35
 )
 
