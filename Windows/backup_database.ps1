@@ -101,6 +101,7 @@ Set-Variable WEEKLY_BACKUP_SUFFIX -Option Constant -Value "weekly"
 
 # Define functions
 function Echo-Input-Parameters{
+
     Write-Host "Echo input parameters..."
 
     Write-Host "- backupRootDirectoryPath = ${backupRootDirectoryPath}"
@@ -117,7 +118,9 @@ function Echo-Input-Parameters{
 
     Write-Host "Echo input parameters: completed."
 }
+
 function Validate-Input-Parameters {
+
     Write-Host "Validate input parameters: started."
 
     # Check if the database server credentials file exists.
@@ -151,7 +154,9 @@ function Create-Backup-Directory {
 
     Write-Host "Create backup directory: completed."
 }
+
 function Get-Backup-Base-Filename {
+
     if ((Get-Date).Day -eq "${monthlyBackupDay}") {
         $backupFilenameSuffix = "${MONTHLY_BACKUP_SUFFIX}"
     }
@@ -161,14 +166,10 @@ function Get-Backup-Base-Filename {
     else {
         $backupFilenameSuffix = "${DAILY_BACKUP_SUFFIX}"
     }
-    Write-Output  "${backupFilenamePrefix}.$(Get-Date -Format yyyyMMdd).${backupFilenameSuffix}"
+    Write-Output  "${backupFilenamePrefix}.$(Get-Date -Format ${DATE_FORMAT}).${backupFilenameSuffix}"
 }
 
 function Backup-Database {
-    Param(
-        [string]$backupFilePath,
-        [string]$logFilePath
-    )
 
     Write-Host "Backup database: started."
 
@@ -206,9 +207,6 @@ function Backup-Database {
 }
 
 function Validate-Backup-File {
-    Param(
-        [string]$backupFilePath
-    )
 
     Write-Host "Validate backup file: started."
     if (Select-String `
@@ -223,7 +221,6 @@ function Validate-Backup-File {
     }
     Write-Host "Validate backup file: completed."
 }
-
 
 function Remove-Backup-Files {
     Param(
@@ -243,6 +240,7 @@ function Remove-Backup-Files {
 }
 
 function Apply-Backup-File-Retention-Policy{
+
     Write-Host "Apply backup file retention policy: started."
 
     Remove-Backup-Files `
@@ -264,14 +262,17 @@ function Apply-Backup-File-Retention-Policy{
 Write-Host "------------------------- START -------------------------"
 Echo-Input-Parameters
 Validate-Input-Parameters
+
+# Compute global variables
 $backupDirectoryPath = "${backupRootDirectoryPath}\${databaseServerResourceName}"
-Create-Backup-Directory
 $backupFilenamePrefix = "${databaseServerResourceName}.${databaseName}"
 $baseFilename = "$(Get-Backup-Base-Filename)"
 $backupFilePath = "$backupDirectoryPath\${baseFilename}.${SQL_FILE_EXTENSION}"
 $logFilePath = "$backupDirectoryPath\${baseFilename}.${LOG_FILE_EXTENSION}"
-Backup-Database -backupFilePath "${backupFilePath}" -logFilePath "${logFilePath}"
-Validate-Backup-File -backupFilePath "${backupFilePath}"
+
+Create-Backup-Directory
+Backup-Database
+Validate-Backup-File
 Apply-Backup-File-Retention-Policy
 Write-Host "------------------------- FINISH -------------------------"
 
