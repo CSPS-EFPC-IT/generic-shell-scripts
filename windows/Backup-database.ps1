@@ -232,8 +232,10 @@ function Remove-BackupFiles {
 
     Write-Host "- Removing ${BackupFilenameSuffix} backup files older than ${RetentionDays} days, if any..."
 
-    Get-ChildItem "${backupDirectoryPath}\${backupFilenamePrefix}.*.${BackupFilenameSuffix}.${SQL_FILE_EXTENSION}" |
-    Where-Object { $_.CreationTime -lt (Get-Date).AddDays(-${RetentionDays}) } |
+    # Delete both sql and log files that are holder than the retention period.
+    Get-ChildItem "${backupDirectoryPath}"|
+    where-Object FullName -Match "${backupFilenamePrefix}.*.${BackupFilenameSuffix}.(${SQL_FILE_EXTENSION}|${LOG_FILE_EXTENSION})" |
+    Where-Object CreationTime -lt (Get-Date).AddDays(-${RetentionDays}) |
     ForEach-Object {
         $file = Get-Item $_.FullName
         Write-Host "- Removing: $(${file}.Name) - Creation Date: $(${file}.CreationTime)"
