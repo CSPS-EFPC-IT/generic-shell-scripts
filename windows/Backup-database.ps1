@@ -5,7 +5,7 @@ Param(
         Mandatory = $true
     )]
     [string]
-    $backupRootDirectoryPath,
+    ${Backup-Root-Directory-Path},
 
     [parameter(
         HelpMessage = "The number of days to keep the daily backups. Allowed values: [1-730]."
@@ -104,7 +104,7 @@ function Echo-Input-Parameters {
 
     Write-Host "Echo input parameters..."
 
-    Write-Host "- backupRootDirectoryPath = ${backupRootDirectoryPath}"
+    Write-Host "- Backup-Root-Directory-Path = ${Backup-Root-Directory-Path}"
     Write-Host "- dailyBackupRetentionDays = ${dailyBackupRetentionDays}"
     Write-Host "- databaseName = ${databaseName}"
     Write-Host "- databaseServerCredentialsFilePath = ${databaseServerCredentialsFilePath}"
@@ -130,7 +130,7 @@ function Validate-Input-Parameters {
     }
 
     # Check if backup directory exists.
-    if (-Not(Test-Path -Path "${backupRootDirectoryPath}" -PathType Container)) {
+    if (-Not(Test-Path -Path "${Backup-Root-Directory-Path}" -PathType Container)) {
         Write-Host "- Error: Specified root backup directory NOT found. Aborting."
         Exit 1
     }
@@ -264,7 +264,7 @@ Echo-Input-Parameters
 Validate-Input-Parameters
 
 # Compute global variables
-$backupDirectoryPath = "${backupRootDirectoryPath}\${databaseServerResourceName}"
+$backupDirectoryPath = "${Backup-Root-Directory-Path}\${databaseServerResourceName}"
 $backupFilenamePrefix = "${databaseServerResourceName}.${databaseName}"
 $baseFilename = "$(Get-Backup-Base-Filename)"
 $backupFilePath = "$backupDirectoryPath\${baseFilename}.${SQL_FILE_EXTENSION}"
