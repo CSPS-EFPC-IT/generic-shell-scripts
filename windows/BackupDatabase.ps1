@@ -94,7 +94,9 @@ Set-Variable DAILY_BACKUP_SUFFIX -Option Constant -Value "daily"
 Set-Variable DATE_FORMAT -Option Constant -Value "yyyyMMdd"
 Set-Variable LOG_FILE_EXTENSION -Option Constant -Value "log"
 Set-Variable MONTHLY_BACKUP_SUFFIX -Option Constant -Value "monthly"
+Set-Variable MYSQLDUMP_EXECUTABLE_PATH -Value "C:\Program Files\MySQL\MySQL Workbench 8.0\mysqldump.exe"
 Set-Variable MYSQL_DATABASE_SERVER_TYPE -Option Constant -Value "mysql"
+Set-Variable PGDUMP_EXECUTABLE_PATH -Value "C:\Program Files\PostgreSQL\14\bin\pg_dump.exe"
 Set-Variable POSTGRES_DATABASE_SERVER_TYPE -Option Constant -Value "postgres"
 Set-Variable SQL_FILE_EXTENSION -Option Constant -Value "sql"
 Set-Variable WEEKLY_BACKUP_SUFFIX -Option Constant -Value "weekly"
@@ -186,7 +188,7 @@ function Backup-Database {
 
     switch ($DatabaseServerType) {
         "$MYSQL_DATABASE_SERVER_TYPE" {
-            Start-Process "C:\Program Files\MySQL\MySQL Workbench 8.0\mysqldump.exe" `
+            Start-Process "${MYSQLDUMP_EXECUTABLE_PATH}" `
                 -ArgumentList "--defaults-file=`"${DatabaseServerCredentialsFilePath}`" --compress=TRUE --default-character-set=utf8 --no-tablespaces --protocol=tcp --single-transaction=TRUE --skip-triggers ${verboseOption} `"${DatabaseName}`"" `
                 -RedirectStandardError "${logFilePath}" `
                 -RedirectStandardOutput "${backupFilePath}" `
@@ -195,7 +197,7 @@ function Backup-Database {
         "$POSTGRES_DATABASE_SERVER_TYPE" {
             # Overwride default service file location by setting corresponding envionment variable.
             $Env:PGSERVICEFILE = "${DatabaseServerCredentialsFilePath}"
-            Start-Process "C:\Program Files\PostgreSQL\14\bin\pg_dump.exe" `
+            Start-Process "${PGDUMP_EXECUTABLE_PATH}" `
                 -ArgumentList "--clean --create --if-exists --no-acl --no-owner ${verboseOption} `"service=${DatabaseServerResourceName} dbname=${DatabaseName}`"" `
                 -RedirectStandardError "${logFilePath}" `
                 -RedirectStandardOutput "${backupFilePath}" `
