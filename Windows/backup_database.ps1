@@ -193,7 +193,7 @@ function Backup-Database {
                 -Wait
         }
         "$POSTGRES_DATABASE_SERVER_TYPE" {
-            # Set PGSERVICEFILE
+            # Overwride default service file location by setting corresponding envionment variable.
             $Env:PGSERVICEFILE = "${databaseServerCredentialsFilePath}"
             Start-Process "C:\Program Files\PostgreSQL\14\bin\pg_dump.exe" `
                 -ArgumentList "--clean --create --if-exists --no-acl --no-owner ${verboseOption} `"service=${databaseServerResourceName} dbname=${databaseName}`"" `
