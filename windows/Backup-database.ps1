@@ -5,35 +5,35 @@ Param(
         Mandatory = $true
     )]
     [string]
-    ${Backup-Root-Directory-Path},
+    $BackupRootDirectoryPath,
 
     [parameter(
         HelpMessage = "The number of days to keep the daily backups. Allowed values: [1-730]."
     )]
     [int]
     [ValidateRange(1, 730)]
-    $dailyBackupRetentionDays = 15,
+    $DailyBackupRetentionDays = 15,
 
     [parameter(
         HelpMessage = "The name of the database to back up.",
         Mandatory = $true
     )]
     [string]
-    $databaseName,
+    $DatabaseName,
 
     [parameter(
         HelpMessage = "The path to a *.cnf file for mysql or .pg_service.conf file for postgres.",
         Mandatory = $true
     )]
     [string]
-    $databaseServerCredentialsFilePath,
+    $DatabaseServerCredentialsFilePath,
 
     [parameter(
         HelpMessage = "The database server resource name.",
         Mandatory = $true
     )]
     [string]
-    $databaseServerResourceName,
+    $DatabaseServerResourceName,
 
     [parameter(
         HelpMessage = "The database server type. Allowed values: `"mysql`", `"postgres`"",
@@ -44,27 +44,27 @@ Param(
         "mysql",
         "postgres"
     )]
-    $databaseServerType,
+    $DatabaseServerType,
 
     [parameter(
         HelpMessage = "The day of the month when the monthly backup is created. Allowed values: [1-28]."
     )]
     [int]
     [ValidateRange(1, 28)]
-    $monthlyBackupDay = 15,
+    $MonthlyBackupDay = 15,
 
     [parameter(
         HelpMessage = "The number of days to keep the monthly backups. Allowed values: [1-730]."
     )]
     [int]
     [ValidateRange(1, 730)]
-    $monthlyBackupRetentionDays = 730,
+    $MonthlyBackupRetentionDays = 730,
 
     [parameter(
         HelpMessage = "Whether or not database backup logs should be verbatim."
     )]
     [switch]
-    $verboseBackupLog,
+    $VerboseBackupLog,
 
     [parameter(
         HelpMessage = "The day of the week when the weekly backup is created. Allowed values: `"Sunday`", `"Monday`", `"Tuesday`", `"Wednesday`", `"Thursday`", `"Friday`", `"Saturday`"."
@@ -79,14 +79,14 @@ Param(
         "Friday",
         "Saturday"
     )]
-    $weeklyBackupDay = "Sunday",
+    $WeeklyBackupDay = "Sunday",
 
     [parameter(
         HelpMessage = "The number of days to keep the weekly backups. Allowed values: [1-730]."
     )]
     [int]
     [ValidateRange(1, 730)]
-    $weeklyBackupRetentionDays = 35
+    $WeeklyBackupRetentionDays = 35
 )
 
 # Define constants
@@ -100,47 +100,47 @@ Set-Variable SQL_FILE_EXTENSION -Option Constant -Value "sql"
 Set-Variable WEEKLY_BACKUP_SUFFIX -Option Constant -Value "weekly"
 
 # Define functions
-function Echo-Input-Parameters {
+function Show-InputParameters {
 
-    Write-Host "Echo input parameters..."
+    Write-Host "$($MyInvocation.MyCommand.Name): started."
 
-    Write-Host "- Backup-Root-Directory-Path = ${Backup-Root-Directory-Path}"
-    Write-Host "- dailyBackupRetentionDays = ${dailyBackupRetentionDays}"
-    Write-Host "- databaseName = ${databaseName}"
-    Write-Host "- databaseServerCredentialsFilePath = ${databaseServerCredentialsFilePath}"
-    Write-Host "- databaseServerResourceName = ${databaseServerResourceName}"
-    Write-Host "- databaseServerType = ${databaseServerType}"
-    Write-Host "- monthlyBackupDay = ${monthlyBackupDay}"
-    Write-Host "- monthlyBackupRetentionDays = ${monthlyBackupRetentionDays}"
-    Write-Host "- verboseBackupLog = ${verboseBackupLog}"
-    Write-Host "- weeklyBackupDay = ${weeklyBackupDay}"
-    Write-Host "- weeklyBackupRetentionDays = ${weeklyBackupRetentionDays}"
+    Write-Host "- BackupRootDirectoryPath = ${BackupRootDirectoryPath}"
+    Write-Host "- DailyBackupRetentionDays = ${DailyBackupRetentionDays}"
+    Write-Host "- DatabaseName = ${DatabaseName}"
+    Write-Host "- DatabaseServerCredentialsFilePath = ${DatabaseServerCredentialsFilePath}"
+    Write-Host "- DatabaseServerResourceName = ${DatabaseServerResourceName}"
+    Write-Host "- DatabaseServerType = ${DatabaseServerType}"
+    Write-Host "- MonthlyBackupDay = ${MonthlyBackupDay}"
+    Write-Host "- MonthlyBackupRetentionDays = ${MonthlyBackupRetentionDays}"
+    Write-Host "- VerboseBackupLog = ${VerboseBackupLog}"
+    Write-Host "- WeeklyBackupDay = ${WeeklyBackupDay}"
+    Write-Host "- WeeklyBackupRetentionDays = ${WeeklyBackupRetentionDays}"
 
-    Write-Host "Echo input parameters: completed."
+    Write-Host "$($MyInvocation.MyCommand.Name): completed."
 }
 
-function Validate-Input-Parameters {
+function Confirm-InputParameters {
 
-    Write-Host "Validate input parameters: started."
+    Write-Host "$($MyInvocation.MyCommand.Name): started."
 
     # Check if the database server credentials file exists.
-    if (-Not(Test-Path -Path "${databaseServerCredentialsFilePath}" -PathType Leaf)) {
+    if (-Not(Test-Path -Path "${DatabaseServerCredentialsFilePath}" -PathType Leaf)) {
         Write-Host "- Error: Specified database server credentials file NOT found. Aborting."
         Exit 1
     }
 
     # Check if backup directory exists.
-    if (-Not(Test-Path -Path "${Backup-Root-Directory-Path}" -PathType Container)) {
+    if (-Not(Test-Path -Path "${BackupRootDirectoryPath}" -PathType Container)) {
         Write-Host "- Error: Specified root backup directory NOT found. Aborting."
         Exit 1
     }
 
-    Write-Host "Validate input parameter: completed."
+    Write-Host "$($MyInvocation.MyCommand.Name): completed."
 }
 
-function Create-Backup-Directory {
+function New-BackupDirectory {
 
-    Write-Host "Create backup directory: started."
+    Write-Host "$($MyInvocation.MyCommand.Name): started."
 
     Write-Host "- Backup directory path: ${backupDirectoryPath}"
 
@@ -152,15 +152,15 @@ function Create-Backup-Directory {
         Write-Host "- Backup directory created."
     }
 
-    Write-Host "Create backup directory: completed."
+    Write-Host "$($MyInvocation.MyCommand.Name): completed."
 }
 
-function Get-Backup-Base-Filename {
+function Get-BackupBaseFilename {
 
-    if ((Get-Date).Day -eq "${monthlyBackupDay}") {
+    if ((Get-Date).Day -eq "${MonthlyBackupDay}") {
         $backupFilenameSuffix = "${MONTHLY_BACKUP_SUFFIX}"
     }
-    elseif ((Get-Date).DayOfWeek -eq "$weeklyBackupDay") {
+    elseif ((Get-Date).DayOfWeek -eq "$WeeklyBackupDay") {
         $backupFilenameSuffix = "${WEEKLY_BACKUP_SUFFIX}"
     }
     else {
@@ -171,44 +171,45 @@ function Get-Backup-Base-Filename {
 
 function Backup-Database {
 
-    Write-Host "Backup database: started."
+    Write-Host "$($MyInvocation.MyCommand.Name): started."
 
     Write-Host "- Backup file path: ${backupFilePath}"
     Write-Host "- Log file path: ${logFilePath}"
 
     # Compute verbose option based on script parameter switch.
-    if ($verboseBackupLog) {
+    if ($VerboseBackupLog) {
         $verboseOption = '--verbose'
     }
     else {
         $verboseOption = ''
     }
 
-    switch ($databaseServerType) {
+    switch ($DatabaseServerType) {
         "$MYSQL_DATABASE_SERVER_TYPE" {
             Start-Process "C:\Program Files\MySQL\MySQL Workbench 8.0\mysqldump.exe" `
-                -ArgumentList "--defaults-file=`"${databaseServerCredentialsFilePath}`" --compress=TRUE --default-character-set=utf8 --no-tablespaces --protocol=tcp --single-transaction=TRUE --skip-triggers ${verboseOption} `"${databaseName}`"" `
+                -ArgumentList "--defaults-file=`"${DatabaseServerCredentialsFilePath}`" --compress=TRUE --default-character-set=utf8 --no-tablespaces --protocol=tcp --single-transaction=TRUE --skip-triggers ${verboseOption} `"${DatabaseName}`"" `
                 -RedirectStandardError "${logFilePath}" `
                 -RedirectStandardOutput "${backupFilePath}" `
                 -Wait
         }
         "$POSTGRES_DATABASE_SERVER_TYPE" {
             # Overwride default service file location by setting corresponding envionment variable.
-            $Env:PGSERVICEFILE = "${databaseServerCredentialsFilePath}"
+            $Env:PGSERVICEFILE = "${DatabaseServerCredentialsFilePath}"
             Start-Process "C:\Program Files\PostgreSQL\14\bin\pg_dump.exe" `
-                -ArgumentList "--clean --create --if-exists --no-acl --no-owner ${verboseOption} `"service=${databaseServerResourceName} dbname=${databaseName}`"" `
+                -ArgumentList "--clean --create --if-exists --no-acl --no-owner ${verboseOption} `"service=${DatabaseServerResourceName} dbname=${DatabaseName}`"" `
                 -RedirectStandardError "${logFilePath}" `
                 -RedirectStandardOutput "${backupFilePath}" `
                 -Wait
         }
     }
 
-    Write-Host "Backup database: completed."
+    Write-Host "$($MyInvocation.MyCommand.Name): completed."
 }
 
-function Validate-Backup-File {
+function Confirm-BackupFile {
 
-    Write-Host "Validate backup file: started."
+    Write-Host "$($MyInvocation.MyCommand.Name): started."
+
     if (Select-String `
             -Path "${backupFilePath}" `
             -Pattern '^-- (Dump completed on \d{4}-\d{2}-\d{2}\s{1,2}\d{1,2}:\d{2}:\d{2}|PostgreSQL database dump complete)$' `
@@ -219,19 +220,20 @@ function Validate-Backup-File {
         Write-Host "- Error: Database Backup failed. Aborting."
         Exit 1
     }
-    Write-Host "Validate backup file: completed."
+
+    Write-Host "$($MyInvocation.MyCommand.Name): completed."
 }
 
-function Remove-Backup-Files {
+function Remove-BackupFiles {
     Param(
-        [string]$backupFilenameSuffix,
-        [int]$retentionDays
+        [string]$BackupFilenameSuffix,
+        [int]$RetentionDays
     )
 
-    Write-Host "- Removing ${backupFilenameSuffix} backup files older than ${retentionDays} days, if any..."
+    Write-Host "- Removing ${BackupFilenameSuffix} backup files older than ${RetentionDays} days, if any..."
 
-    Get-ChildItem "${backupDirectoryPath}\${backupFilenamePrefix}.*.${backupFilenameSuffix}.${SQL_FILE_EXTENSION}" |
-    Where-Object { $_.CreationTime -lt (Get-Date).AddDays(-${retentionDays}) } |
+    Get-ChildItem "${backupDirectoryPath}\${backupFilenamePrefix}.*.${BackupFilenameSuffix}.${SQL_FILE_EXTENSION}" |
+    Where-Object { $_.CreationTime -lt (Get-Date).AddDays(-${RetentionDays}) } |
     ForEach-Object {
         $file = Get-Item $_.FullName
         Write-Host "- Removing: $(${file}.Name) - Creation Date: $(${file}.CreationTime)"
@@ -239,41 +241,41 @@ function Remove-Backup-Files {
     }
 }
 
-function Apply-Backup-File-Retention-Policy {
+function Invoke-BackupFileRetentionPolicy {
 
-    Write-Host "Apply backup file retention policy: started."
+    Write-Host "$($MyInvocation.MyCommand.Name): started."
 
-    Remove-Backup-Files `
-        -backupFilenameSuffix "${MONTHLY_BACKUP_SUFFIX}" `
-        -retentionDays ${monthlyBackupRetentionDays}
+    Remove-BackupFiles `
+        -BackupFilenameSuffix "${MONTHLY_BACKUP_SUFFIX}" `
+        -RetentionDays ${MonthlyBackupRetentionDays}
 
-    Remove-Backup-Files `
-        -backupFilenameSuffix "${WEEKLY_BACKUP_SUFFIX}" `
-        -retentionDays ${weeklyBackupRetentionDays}
+    Remove-BackupFiles `
+        -BackupFilenameSuffix "${WEEKLY_BACKUP_SUFFIX}" `
+        -RetentionDays ${WeeklyBackupRetentionDays}
 
-    Remove-Backup-Files `
-        -backupFilenameSuffix "${DAILY_BACKUP_SUFFIX}" `
-        -retentionDays ${dailyBackupRetentionDays}
+    Remove-BackupFiles `
+        -BackupFilenameSuffix "${DAILY_BACKUP_SUFFIX}" `
+        -RetentionDays ${DailyBackupRetentionDays}
 
-    Write-Host "Apply backup file retention policy: completed."
+    Write-Host "$($MyInvocation.MyCommand.Name): completed."
 }
 
 # Main Work
 Write-Host "------------------------- START -------------------------"
-Echo-Input-Parameters
-Validate-Input-Parameters
+Show-InputParameters
+Confirm-InputParameters
 
 # Compute global variables
-$backupDirectoryPath = "${Backup-Root-Directory-Path}\${databaseServerResourceName}"
-$backupFilenamePrefix = "${databaseServerResourceName}.${databaseName}"
-$baseFilename = "$(Get-Backup-Base-Filename)"
+$backupDirectoryPath = "${BackupRootDirectoryPath}\${DatabaseServerResourceName}"
+$backupFilenamePrefix = "${DatabaseServerResourceName}.${DatabaseName}"
+$baseFilename = "$(Get-BackupBaseFilename)"
 $backupFilePath = "$backupDirectoryPath\${baseFilename}.${SQL_FILE_EXTENSION}"
 $logFilePath = "$backupDirectoryPath\${baseFilename}.${LOG_FILE_EXTENSION}"
 
-Create-Backup-Directory
+New-BackupDirectory
 Backup-Database
-Validate-Backup-File
-Apply-Backup-File-Retention-Policy
+Confirm-BackupFile
+Invoke-BackupFileRetentionPolicy
 Write-Host "------------------------- FINISH -------------------------"
 
 # Exit Script
