@@ -1,43 +1,43 @@
 # Get Input
 Param(
     [parameter(
-        HelpMessage="The path of the directory where the backup files will be stored.",
-        Mandatory=$true
+        HelpMessage = "The path of the directory where the backup files will be stored.",
+        Mandatory = $true
     )]
     [string]
     $backupRootDirectoryPath,
 
     [parameter(
-        HelpMessage="The number of days to keep the daily backups. Allowed values: [1-730]."
+        HelpMessage = "The number of days to keep the daily backups. Allowed values: [1-730]."
     )]
     [int]
     [ValidateRange(1, 730)]
     $dailyBackupRetentionDays = 15,
 
     [parameter(
-        HelpMessage="The name of the database to back up.",
-        Mandatory=$true
+        HelpMessage = "The name of the database to back up.",
+        Mandatory = $true
     )]
     [string]
     $databaseName,
 
     [parameter(
-        HelpMessage="The path to a *.cnf file for mysql or .pg_service.conf file for postgres.",
-        Mandatory=$true
+        HelpMessage = "The path to a *.cnf file for mysql or .pg_service.conf file for postgres.",
+        Mandatory = $true
     )]
     [string]
     $databaseServerCredentialsFilePath,
 
     [parameter(
-        HelpMessage="The database server resource name.",
-        Mandatory=$true
+        HelpMessage = "The database server resource name.",
+        Mandatory = $true
     )]
     [string]
     $databaseServerResourceName,
 
     [parameter(
-        HelpMessage="The database server type. Allowed values: `"mysql`", `"postgres`"",
-        Mandatory=$true
+        HelpMessage = "The database server type. Allowed values: `"mysql`", `"postgres`"",
+        Mandatory = $true
     )]
     [string]
     [ValidateSet(
@@ -47,27 +47,27 @@ Param(
     $databaseServerType,
 
     [parameter(
-        HelpMessage="The day of the month when the monthly backup is created. Allowed values: [1-28]."
+        HelpMessage = "The day of the month when the monthly backup is created. Allowed values: [1-28]."
     )]
     [int]
     [ValidateRange(1, 28)]
     $monthlyBackupDay = 15,
 
     [parameter(
-        HelpMessage="The number of days to keep the monthly backups. Allowed values: [1-730]."
+        HelpMessage = "The number of days to keep the monthly backups. Allowed values: [1-730]."
     )]
     [int]
     [ValidateRange(1, 730)]
     $monthlyBackupRetentionDays = 730,
 
     [parameter(
-        HelpMessage="Whether or not database backup logs should be verbatim."
+        HelpMessage = "Whether or not database backup logs should be verbatim."
     )]
     [switch]
     $verboseBackupLog,
 
     [parameter(
-        HelpMessage="The day of the week when the weekly backup is created. Allowed values: `"Sunday`", `"Monday`", `"Tuesday`", `"Wednesday`", `"Thursday`", `"Friday`", `"Saturday`"."
+        HelpMessage = "The day of the week when the weekly backup is created. Allowed values: `"Sunday`", `"Monday`", `"Tuesday`", `"Wednesday`", `"Thursday`", `"Friday`", `"Saturday`"."
     )]
     [string]
     [ValidateSet(
@@ -82,7 +82,7 @@ Param(
     $weeklyBackupDay = "Sunday",
 
     [parameter(
-        HelpMessage="The number of days to keep the weekly backups. Allowed values: [1-730]."
+        HelpMessage = "The number of days to keep the weekly backups. Allowed values: [1-730]."
     )]
     [int]
     [ValidateRange(1, 730)]
@@ -100,7 +100,7 @@ Set-Variable SQL_FILE_EXTENSION -Option Constant -Value "sql"
 Set-Variable WEEKLY_BACKUP_SUFFIX -Option Constant -Value "weekly"
 
 # Define functions
-function Echo-Input-Parameters{
+function Echo-Input-Parameters {
 
     Write-Host "Echo input parameters..."
 
@@ -124,13 +124,13 @@ function Validate-Input-Parameters {
     Write-Host "Validate input parameters: started."
 
     # Check if the database server credentials file exists.
-    if (-Not(Test-Path -Path "${databaseServerCredentialsFilePath}" -PathType Leaf)){
+    if (-Not(Test-Path -Path "${databaseServerCredentialsFilePath}" -PathType Leaf)) {
         Write-Host "- Error: Specified database server credentials file NOT found. Aborting."
         Exit 1
     }
 
     # Check if backup directory exists.
-    if(-Not(Test-Path -Path "${backupRootDirectoryPath}" -PathType Container)){
+    if (-Not(Test-Path -Path "${backupRootDirectoryPath}" -PathType Container)) {
         Write-Host "- Error: Specified root backup directory NOT found. Aborting."
         Exit 1
     }
@@ -144,7 +144,7 @@ function Create-Backup-Directory {
 
     Write-Host "- Backup directory path: ${backupDirectoryPath}"
 
-    if(Test-Path -Path "${backupDirectoryPath}" -PathType Container){
+    if (Test-Path -Path "${backupDirectoryPath}" -PathType Container) {
         Write-Host "- Warning: Backup directory already exists. Skipping."
     }
     else {
@@ -177,14 +177,14 @@ function Backup-Database {
     Write-Host "- Log file path: ${logFilePath}"
 
     # Compute verbose option based on script parameter switch.
-    if ($verboseBackupLog){
-        $verboseOption='--verbose'
+    if ($verboseBackupLog) {
+        $verboseOption = '--verbose'
     }
     else {
-        $verboseOption=''
+        $verboseOption = ''
     }
 
-    switch($databaseServerType){
+    switch ($databaseServerType) {
         "$MYSQL_DATABASE_SERVER_TYPE" {
             Start-Process "C:\Program Files\MySQL\MySQL Workbench 8.0\mysqldump.exe" `
                 -ArgumentList "--defaults-file=`"${databaseServerCredentialsFilePath}`" --compress=TRUE --default-character-set=utf8 --no-tablespaces --protocol=tcp --single-transaction=TRUE --skip-triggers ${verboseOption} `"${databaseName}`"" `
@@ -192,7 +192,7 @@ function Backup-Database {
                 -RedirectStandardOutput "${backupFilePath}" `
                 -Wait
         }
-        "$POSTGRES_DATABASE_SERVER_TYPE"{
+        "$POSTGRES_DATABASE_SERVER_TYPE" {
             # Set PGSERVICEFILE
             $Env:PGSERVICEFILE = "${databaseServerCredentialsFilePath}"
             Start-Process "C:\Program Files\PostgreSQL\14\bin\pg_dump.exe" `
@@ -231,15 +231,15 @@ function Remove-Backup-Files {
     Write-Host "- Removing ${backupFilenameSuffix} backup files older than ${retentionDays} days, if any..."
 
     Get-ChildItem "${backupDirectoryPath}\${backupFilenamePrefix}.*.${backupFilenameSuffix}.${SQL_FILE_EXTENSION}" |
-        Where-Object { $_.CreationTime -lt (Get-Date).AddDays(-${retentionDays}) } |
-            ForEach-Object {
-                $file = Get-Item $_.FullName
-                Write-Host "- Removing: $(${file}.Name) - Creation Date: $(${file}.CreationTime)"
-                Remove-Item "${file}"
+    Where-Object { $_.CreationTime -lt (Get-Date).AddDays(-${retentionDays}) } |
+    ForEach-Object {
+        $file = Get-Item $_.FullName
+        Write-Host "- Removing: $(${file}.Name) - Creation Date: $(${file}.CreationTime)"
+        Remove-Item "${file}"
     }
 }
 
-function Apply-Backup-File-Retention-Policy{
+function Apply-Backup-File-Retention-Policy {
 
     Write-Host "Apply backup file retention policy: started."
 
