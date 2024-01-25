@@ -211,3 +211,38 @@ ALTER USER "${username}" ENCRYPTED PASSWORD '${password}';
 EOF
   )"
 }
+
+#######################################
+# Wait until a given database service becomes available.
+# Fail if the database service is not availble after a given duration.
+# Arguments:
+#   The database service host, a string.
+#   The maximum waiting time in seconds, an integer. Default: 30.
+#   The database service port, an integer. Default: 5432.
+# Outputs:
+#   Writes message to STDOUT.
+#   Writes message to SDTERR upon failure.
+#######################################
+function postgresql::wait_for_database_service_availability() {
+  # Parameters
+  local database_host="${1}"
+  local maximum_wait="${2:-30}"
+  local database_port="${3:-5432}"
+
+  # Variables
+  local wait_time
+
+  logger::info "Pinging database service ${database_host}:${database_port} until readiness for a maximum of ${maximum_wait} seconds..."
+  wait_time=0
+  until pg_isready --host="${database_host}" --port="${database_port}" --quiet; do
+    if [[ ${wait_time} -ge ${maximum_wait} ]]; then
+      logger::error "The database service did not start within ${wait_time} s. Aborting."
+      exit 1
+    else
+      logger::info "Waiting for the database service to start (${wait_time} s)..."
+      sleep 1
+      ((++wait_time))
+    fi
+  done
+  logger::info "Database service is up and running."
+}

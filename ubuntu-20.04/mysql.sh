@@ -186,3 +186,38 @@ function mysql::set_user_password() {
   logger::info "Setting MySQL user's password..."
   logger::debug "$(mysql --execute "WARNINGS; ALTER USER \`${username}\` IDENTIFIED BY '${password}'";)"
 }
+
+#######################################
+# Wait until a given database service becomes available.
+# Fail if the database service is not availble after a given duration.
+# Arguments:
+#   The database service host, a string.
+#   The maximum waiting time in seconds, an integer. Default: 30.
+#   The database service port, an integer. Default: 3306.
+# Outputs:
+#   Writes message to STDOUT.
+#   Writes message to SDTERR upon failure.
+#######################################
+function mysql::wait_for_database_service_availability() {
+  # Parameters
+  local database_host="${1}"
+  local maximum_wait="${2:-30}"
+  local database_port="${3:-3306}"
+
+  # Variables
+  local wait_time
+
+  logger::info "Pinging database service ${database_host}:${database_port} until readiness for a maximum of ${maximum_wait} seconds..."
+  wait_time=0
+  until mysqladmin ping --host "${database_host}" --port "${database_port}" --silent; do
+    if [[ ${wait_time} -ge ${maximum_wait} ]]; then
+      logger::error "The database service did not start within ${wait_time} s. Aborting."
+      exit 1
+    else
+      logger::info "Waiting for the database service to start (${wait_time} s)..."
+      sleep 1
+      ((++wait_time))
+    fi
+  done
+  logger::info "Database service is up and running."
+}
