@@ -226,7 +226,7 @@ EOF
 function postgresql::wait_for_database_service_availability() {
   # Parameters
   local database_host="${1}"
-  local maximum_wait="${2:-30}"
+  local maximum_wait="${2:-15}"
   local database_port="${3:-5432}"
 
   # Variables

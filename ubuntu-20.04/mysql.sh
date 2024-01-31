@@ -201,7 +201,7 @@ function mysql::set_user_password() {
 function mysql::wait_for_database_service_availability() {
   # Parameters
   local database_host="${1}"
-  local maximum_wait="${2:-30}"
+  local maximum_wait="${2:-15}"
   local database_port="${3:-3306}"
 
   # Variables
