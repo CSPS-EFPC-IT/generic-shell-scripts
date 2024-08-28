@@ -121,10 +121,11 @@ function main() {
 
   logger::title "Package installation"
 
-  logger::action "Installing Apticron and Unattended-Upgrades..."
+  logger::action "Installing Apticron, Postfix (along with missing dependency) and Unattended-Upgrades..."
   export DEBIAN_FRONTEND=noninteractive
   apt install -y \
     apticron \
+    postfix libsasl2-modules \
     unattended-upgrades
 
   #############################################################################
